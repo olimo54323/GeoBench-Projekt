@@ -1,6 +1,5 @@
 <Solution>
-  <Project Path="GeoBench/GeoBench.csproj" />
-  <Project Path="GeoBench/src/GeoBench.Core/GeoBench.Core.csproj" Id="575583e1-1fb5-4dfe-9425-a5caa74d9174" />
-  <Project Path="GeoBench/src/GeoBench.Wpf/GeoBench.Wpf.csproj" Id="cf1682ed-0f94-41df-a557-1b00f8328ad4" />
-  <Project Path="GeoBench/tests/GeoBench.Tests/GeoBench.Tests.csproj" Id="500e62ef-489e-4959-b2c9-ba2ab0efe37c" />
+  <Project Path="src/GeoBench.Core/GeoBench.Core.csproj" Id="575583e1-1fb5-4dfe-9425-a5caa74d9174" />
+  <Project Path="src/GeoBench.Wpf/GeoBench.Wpf.csproj" Id="cf1682ed-0f94-41df-a557-1b00f8328ad4" />
+  <Project Path="tests/GeoBench.Tests/GeoBench.Tests.csproj" Id="500e62ef-489e-4959-b2c9-ba2ab0efe37c" />
 </Solution>

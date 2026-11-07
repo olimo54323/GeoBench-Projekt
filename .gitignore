@@ -428,3 +428,5 @@ FodyWeavers.xsd
 #*.lscache
 /plikiProjektowe
 /docs/architecture.md
+/results
+/cache

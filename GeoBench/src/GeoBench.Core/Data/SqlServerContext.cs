@@ -26,7 +26,8 @@ namespace GeoBench.Core.Data
 
         // Edycja ma znaczenie dla pomiarów: Express ogranicza pamięć i liczbę rdzeni
         protected override string ServerVersionSql =>
-            "SELECT CONCAT(SERVERPROPERTY('ProductVersion'), ' ', SERVERPROPERTY('Edition'))";
+            // SERVERPROPERTY zwraca sql_variant, którego CONCAT nie zamienia sam na tekst
+            "SELECT CONCAT(CAST(SERVERPROPERTY('ProductVersion') AS nvarchar(128)), N' ', CAST(SERVERPROPERTY('Edition') AS nvarchar(128)))";
 
         // Parametry siatki trafiają do raportu (warunek uczciwości porównania); na razie wartości domyślne
         // GEOMETRY_GRID, dostrajanie w etapie pomiarów.

@@ -1,0 +1,29 @@
+﻿<Window x:Class="GeoBench.Wpf.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="O programie GeoBench" Width="520" SizeToContent="Height"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="16">
+        <TextBlock Text="GeoBench" FontSize="20" FontWeight="SemiBold" />
+        <TextBlock x:Name="VersionText" Foreground="Gray" Margin="0,0,0,12" />
+
+        <TextBlock TextWrapping="Wrap">
+            Porównanie przetwarzania danych przestrzennych w czterech wariantach: magazyn SQL Server albo
+            PostgreSQL + PostGIS, przetwarzanie w bazie albo w aplikacji (NetTopologySuite).
+        </TextBlock>
+
+        <TextBlock Text="Dane badawcze" Style="{StaticResource SectionHeader}" Margin="0,16,0,4" />
+        <TextBlock TextWrapping="Wrap">
+            Plan ogólny gminy Częstochowa (schemat APP 2.0) służy wyłącznie jako dane badawcze.
+            Jest to plan nieobowiązujący i nie może być podstawą jakichkolwiek rozstrzygnięć.
+        </TextBlock>
+
+        <TextBlock Text="Źródła danych" Style="{StaticResource SectionHeader}" Margin="0,16,0,4" />
+        <TextBlock TextWrapping="Wrap">
+            • Ewidencja gruntów i budynków: usługa WFS powiatu 2464 (m. Częstochowa) oraz usługa zbiorcza GUGiK.<LineBreak />
+            • Plan ogólny gminy: plik GML w schemacie APP 2.0.
+        </TextBlock>
+
+        <Button Content="Zamknij" HorizontalAlignment="Right" Margin="0,16,0,0" IsCancel="True" IsDefault="True" />
+    </StackPanel>
+</Window>

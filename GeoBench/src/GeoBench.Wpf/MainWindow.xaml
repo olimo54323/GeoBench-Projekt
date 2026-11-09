@@ -3,10 +3,79 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GeoBench.Wpf"
+        xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
+        xmlns:views="clr-namespace:GeoBench.Wpf.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="GeoBench – porównanie przetwarzania przestrzennego" Height="680" Width="1000"
+        MinHeight="480" MinWidth="720" WindowStartupLocation="CenterScreen"
+        Closing="OnClosing">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Plik">
+                <MenuItem Header="_Wyjście" InputGestureText="Alt+F4" Click="OnExitClick" />
+            </MenuItem>
+            <MenuItem Header="Pomo_c">
+                <MenuItem Header="_O programie" Command="{Binding ShowAboutCommand}" />
+            </MenuItem>
+        </Menu>
 
-    </Grid>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <DockPanel LastChildFill="True" />
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem DockPanel.Dock="Right">
+                <Button Content="Anuluj" Command="{Binding CancelCommand}" Padding="8,0" MinWidth="0" />
+            </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right">
+                <ProgressBar Width="160" Height="14" IsIndeterminate="{Binding IsBusy}"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" MinHeight="200" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="160" MinHeight="60" />
+            </Grid.RowDefinitions>
+
+            <TabControl Margin="4">
+                <TabItem Header="Połączenia">
+                    <views:ConnectionsView DataContext="{Binding Connections}" />
+                </TabItem>
+                <TabItem Header="Import">
+                    <views:ImportView DataContext="{Binding Import}" />
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />
+
+            <ListBox x:Name="LogList" Grid.Row="2" Margin="4,0,4,4" ItemsSource="{Binding Log}"
+                     FontFamily="Consolas" FontSize="12" VirtualizingPanel.IsVirtualizing="True">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:LogEntry}">
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsError}" Value="True">
+                                            <Setter Property="Foreground" Value="DarkRed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="{Binding Time, StringFormat=HH:mm:ss, Mode=OneWay}" Foreground="Gray" />
+                            <Run Text="{Binding Message, Mode=OneWay}" />
+                        </TextBlock>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </DockPanel>
 </Window>

@@ -15,6 +15,9 @@
             <MenuItem Header="_Plik">
                 <MenuItem Header="_Wyjście" InputGestureText="Alt+F4" Click="OnExitClick" />
             </MenuItem>
+            <MenuItem Header="_Widok">
+                <MenuItem Header="_Styl mapy…" Command="{Binding MapPanel.EditStyleCommand}" />
+            </MenuItem>
             <MenuItem Header="Pomo_c">
                 <MenuItem Header="_O programie" Command="{Binding ShowAboutCommand}" />
             </MenuItem>
@@ -52,6 +55,9 @@
                 </TabItem>
                 <TabItem Header="Import">
                     <views:ImportView DataContext="{Binding Import}" />
+                </TabItem>
+                <TabItem Header="Mapa">
+                    <views:MapView DataContext="{Binding MapPanel}" />
                 </TabItem>
             </TabControl>
 

@@ -1,0 +1,160 @@
+﻿<UserControl x:Class="GeoBench.Wpf.Views.MapView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
+             xmlns:mapsui="clr-namespace:Mapsui.UI.Wpf;assembly=Mapsui.UI.Wpf"
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:MapViewModel}"
+             d:DesignWidth="900" d:DesignHeight="500">
+    <UserControl.Resources>
+        <!-- Kwadracik stylu przy warstwie i filtrze; klik otwiera popup stylu -->
+        <Style x:Key="Swatch" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTip" Value="Styl (kolor, krycie, obrys)" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Width="18" Height="13" Background="White" BorderBrush="{Binding SwatchOutline}" BorderThickness="1.5">
+                            <Border Background="{Binding SwatchFill}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Zawartość popupu stylu (warstwa bazowa albo filtr) -->
+        <DataTemplate x:Key="StylePopupContent" DataType="{x:Type vm:MapLayerItemViewModel}">
+            <Border Background="{x:Static SystemColors.WindowBrush}" BorderBrush="Gray" BorderThickness="1" Padding="10" Width="250">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <CheckBox Content="Styl warstwy bazowej" IsChecked="{Binding UseLayerStyle}" Margin="0,8,0,0"
+                              Visibility="{Binding CanUseLayerStyle, Converter={StaticResource BoolToVisibility}}" />
+
+                    <StackPanel Margin="0,8,0,0" IsEnabled="{Binding IsStyleEditable}"
+                                Visibility="{Binding HasStyleEditor, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Wypełnienie" />
+                        <xctk:ColorPicker SelectedColor="{Binding StyleEditor.FillColor}" UsingAlphaChannel="False" Margin="0,2,0,0" />
+                        <TextBlock Text="Krycie wypełnienia (%)" Margin="0,8,0,0" />
+                        <DockPanel Margin="0,2,0,0">
+                            <xctk:DoubleUpDown DockPanel.Dock="Right" Width="60" Minimum="0" Maximum="100" Increment="5" FormatString="0"
+                                               Value="{Binding StyleEditor.FillOpacityPercent}" Margin="6,0,0,0" />
+                            <Slider Minimum="0" Maximum="100" Value="{Binding StyleEditor.FillOpacityPercent}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock Text="Obrys" Margin="0,8,0,0" />
+                        <xctk:ColorPicker SelectedColor="{Binding StyleEditor.OutlineColor}" UsingAlphaChannel="False" Margin="0,2,0,0" />
+                        <TextBlock Text="Grubość obrysu (px)" Margin="0,8,0,0" />
+                        <xctk:DoubleUpDown Width="70" HorizontalAlignment="Left" Minimum="0" Maximum="10" Increment="0.5" FormatString="0.0"
+                                           Value="{Binding StyleEditor.OutlineWidth}" Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,8,0,0" Visibility="{Binding HasNoStyleEditor, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock TextWrapping="Wrap" FontSize="11"
+                                   Text="Strefy są rysowane kolorami rodzajów; ustawia się je w oknie Styl mapy." />
+                        <Button Content="Styl mapy…" HorizontalAlignment="Left" Margin="0,6,0,0" Command="{Binding EditMapStyleCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="Zmiany są widoczne od razu i zapisywane po zamknięciu." Foreground="Gray" FontSize="11"
+                               TextWrapping="Wrap" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Filtr pod warstwą -->
+        <DataTemplate x:Key="FilterRow" DataType="{x:Type vm:FilterNodeViewModel}">
+            <StackPanel Orientation="Horizontal" Margin="0,3,0,0" Background="Transparent" KeyDown="OnFilterKeyDown">
+                <StackPanel.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Zmień nazwę" InputGestureText="F2" Command="{Binding StartRenameCommand}" />
+                        <MenuItem Header="Styl…" Command="{Binding OpenStyleCommand}" />
+                        <MenuItem Header="Edytuj w builderze…" Command="{Binding OpenInBuilderCommand}" />
+                    </ContextMenu>
+                </StackPanel.ContextMenu>
+                <CheckBox IsChecked="{Binding IsActive}" VerticalAlignment="Center" ToolTip="Pokaż tylko obiekty spełniające filtr" />
+                <Button x:Name="Swatch" Style="{StaticResource Swatch}" Command="{Binding OpenStyleCommand}" Margin="4,0,6,0" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="175"
+                           ToolTip="{Binding Filter.Where}"
+                           Visibility="{Binding IsNotRenaming, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCommand}" />
+                    </TextBlock.InputBindings>
+                </TextBlock>
+                <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" Width="175"
+                         Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVisibility}}"
+                         KeyDown="OnRenameKeyDown" LostKeyboardFocus="OnRenameLostFocus" IsVisibleChanged="OnRenameVisibleChanged" />
+                <Popup IsOpen="{Binding IsStylePopupOpen, Mode=TwoWay}" StaysOpen="False" PlacementTarget="{Binding ElementName=Swatch}"
+                       Placement="Left" AllowsTransparency="True">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource StylePopupContent}" />
+                </Popup>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <ScrollViewer DockPanel.Dock="Right" Width="270" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <TextBlock Text="Baza" Style="{StaticResource SectionHeader}" />
+                <ComboBox ItemsSource="{Binding Engines}" SelectedItem="{Binding SelectedEngine}" DisplayMemberPath="Name" />
+
+                <TextBlock Text="Warstwy" Style="{StaticResource SectionHeader}" Margin="0,16,0,8" />
+                <CheckBox Content="Podkład OpenStreetMap" IsChecked="{Binding ShowOsm}" />
+                <ItemsControl ItemsSource="{Binding Layers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:LayerNodeViewModel}">
+                            <StackPanel Margin="0,6,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsVisible}" VerticalAlignment="Center" />
+                                    <Button x:Name="Swatch" Style="{StaticResource Swatch}" Command="{Binding OpenStyleCommand}" Margin="4,0,6,0" />
+                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center">
+                                        <TextBlock.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCommand}" />
+                                        </TextBlock.InputBindings>
+                                    </TextBlock>
+                                    <Popup IsOpen="{Binding IsStylePopupOpen, Mode=TwoWay}" StaysOpen="False"
+                                           PlacementTarget="{Binding ElementName=Swatch}" Placement="Left" AllowsTransparency="True">
+                                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource StylePopupContent}" />
+                                    </Popup>
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding Filters}" ItemTemplate="{StaticResource FilterRow}" Margin="20,0,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <UniformGrid Columns="2" Margin="0,12,0,0">
+                    <Button Content="Styl mapy…" Command="{Binding EditStyleCommand}" Margin="0,0,4,4" />
+                    <Button Content="Filtry…" Command="{Binding OpenFiltersCommand}" Margin="4,0,0,4" />
+                    <Button Content="Odśwież" Command="{Binding RefreshCommand}" Margin="0,4,4,0" />
+                    <Button Content="Centruj mapę" Command="{Binding CenterMapCommand}" Margin="4,4,0,0"
+                            ToolTip="Przybliż do zasięgu planu ogólnego (albo Częstochowy, gdy w bazie nie ma planu)" />
+                </UniformGrid>
+
+                <TextBlock Text="{Binding Status}" TextWrapping="Wrap" Foreground="Gray" Margin="0,12,0,0" />
+                <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="11" Margin="0,6,0,0"
+                           Text="Prawy przycisk na mapie: informacje o obiektach w tym miejscu. Zaznaczony filtr pokazuje tylko pasujące obiekty warstwy." />
+
+                <Border Margin="0,16,0,0" Padding="8" Background="#FFF4E5" BorderBrush="#E8A33D" BorderThickness="1">
+                    <TextBlock TextWrapping="Wrap" FontSize="11"
+                               Text="Plan ogólny gminy: dane badawcze. Plan nieobowiązujący, nie może być podstawą rozstrzygnięć." />
+                </Border>
+
+                <TextBlock Text="Strefy planistyczne" Style="{StaticResource SectionHeader}" Margin="0,16,0,8" />
+                <ItemsControl ItemsSource="{Binding Legend}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:LegendItem}">
+                            <StackPanel Orientation="Horizontal" Margin="0,2" Opacity="{Binding TextOpacity}">
+                                <Border Width="18" Height="12" Background="{Binding Fill}" BorderBrush="{Binding Outline}" BorderThickness="1" />
+                                <TextBlock Text="{Binding Symbol}" FontWeight="SemiBold" Width="28" Margin="6,0,0,0" />
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" Width="190" FontSize="11" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <mapsui:MapControl x:Name="MapControl" />
+    </DockPanel>
+</UserControl>

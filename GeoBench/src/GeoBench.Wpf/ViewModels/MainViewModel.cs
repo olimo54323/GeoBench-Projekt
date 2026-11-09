@@ -46,11 +46,15 @@ namespace GeoBench.Wpf.ViewModels
             _dialogs = dialogs;
             Connections = new ConnectionsViewModel(factory, this);
             Import = new ImportViewModel(factory, this, dialogs);
+            MapPanel = new MapViewModel(factory, this, dialogs);
         }
 
         public ConnectionsViewModel Connections { get; }
 
         public ImportViewModel Import { get; }
+
+        /// <summary>Zakładka Mapa.</summary>
+        public MapViewModel MapPanel { get; }
 
         public ObservableCollection<LogEntry> Log { get; } = [];
 

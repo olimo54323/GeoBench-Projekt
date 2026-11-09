@@ -1,0 +1,207 @@
+<Window x:Class="GeoBench.Wpf.Views.FilterBuilderWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:FilterBuilderViewModel}"
+        Title="Filtry warstw" Width="1060" Height="720" MinWidth="860" MinHeight="600"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="12">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0" LastChildFill="False">
+            <TextBlock DockPanel.Dock="Left" Foreground="Gray" VerticalAlignment="Center"
+                       Text="{Binding Engine.Name, StringFormat='Sprawdzanie i podpowiedzi wartości: {0}'}" />
+            <Button DockPanel.Dock="Right" Content="Zamknij" IsCancel="True" MinWidth="80" />
+        </DockPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="270" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Warstwa i jej filtry -->
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Warstwa" Style="{StaticResource SectionHeader}" />
+                <ComboBox DockPanel.Dock="Top" ItemsSource="{Binding Tables}" SelectedItem="{Binding SelectedTable}" DisplayMemberPath="Title" />
+                <TextBlock DockPanel.Dock="Top" Text="Filtry" Style="{StaticResource SectionHeader}" Margin="0,12,0,4" />
+                <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Content="Nowy" Command="{Binding NewCommand}" MinWidth="70" />
+                    <Button Content="Usuń" Command="{Binding DeleteCommand}" MinWidth="70" Margin="8,0,0,0" />
+                </StackPanel>
+                <ListBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" DisplayMemberPath="Name" />
+            </DockPanel>
+
+            <!-- Edycja filtra -->
+            <DockPanel Grid.Column="1" Margin="16,0,0,0" IsEnabled="{Binding HasSelection}">
+                <TextBlock DockPanel.Dock="Top" Text="Nazwa (nazwa w panelu warstw)" Style="{StaticResource SectionHeader}" />
+                <TextBox DockPanel.Dock="Top" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionHeader}" Margin="0,12,0,4"
+                           Text="Warunek WHERE (Ctrl+Spacja – podpowiedzi)" />
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                    <TextBlock Text="Styl" Style="{StaticResource SectionHeader}" />
+                    <CheckBox Content="Styl warstwy bazowej (dla stref: kolory rodzajów)" IsChecked="{Binding UseLayerStyle}" />
+                    <Grid Margin="0,8,0,0" IsEnabled="{Binding IsStyleEditable}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Wypełnienie" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <xctk:ColorPicker Grid.Column="1" Width="120" UsingAlphaChannel="False" SelectedColor="{Binding StyleEditor.FillColor}" />
+                        <TextBlock Grid.Column="2" Text="Krycie (%)" VerticalAlignment="Center" Margin="16,0,8,0" />
+                        <xctk:DoubleUpDown Grid.Column="3" Width="70" Minimum="0" Maximum="100" Increment="5" FormatString="0"
+                                           Value="{Binding StyleEditor.FillOpacityPercent}" />
+                        <TextBlock Grid.Row="1" Text="Obrys" VerticalAlignment="Center" Margin="0,6,8,0" />
+                        <xctk:ColorPicker Grid.Row="1" Grid.Column="1" Width="120" UsingAlphaChannel="False" Margin="0,6,0,0"
+                                          SelectedColor="{Binding StyleEditor.OutlineColor}" />
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="Grubość (px)" VerticalAlignment="Center" Margin="16,6,8,0" />
+                        <xctk:DoubleUpDown Grid.Row="1" Grid.Column="3" Width="70" Minimum="0" Maximum="10" Increment="0.5" FormatString="0.0"
+                                           Value="{Binding StyleEditor.OutlineWidth}" Margin="0,6,0,0" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Content="Sprawdź" Command="{Binding CheckCommand}" MinWidth="80" />
+                        <Button Content="Zapisz" Command="{Binding SaveCommand}" MinWidth="80" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding CheckText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                </StackPanel>
+
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding ValidationText}" TextWrapping="Wrap" Margin="0,6,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="DarkGreen" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasError}" Value="True">
+                                    <Setter Property="Foreground" Value="Firebrick" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Grid>
+                    <TextBox x:Name="WhereBox" Text="{Binding Where, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="Consolas" FontSize="13" AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto" MinHeight="120"
+                             PreviewKeyDown="OnWherePreviewKeyDown" TextChanged="OnWhereTextChanged"
+                             SelectionChanged="OnWhereSelectionChanged" />
+                    <Popup x:Name="SuggestionsPopup" IsOpen="{Binding IsSuggestionsOpen, Mode=TwoWay}" StaysOpen="False"
+                           PlacementTarget="{Binding ElementName=WhereBox}" Placement="Bottom" AllowsTransparency="True">
+                        <Border Background="{x:Static SystemColors.WindowBrush}" BorderBrush="Gray" BorderThickness="1">
+                            <ListBox x:Name="SuggestionsList" ItemsSource="{Binding Suggestions}" SelectedItem="{Binding SelectedSuggestion}"
+                                     MaxHeight="220" MinWidth="220" BorderThickness="0" Focusable="False"
+                                     PreviewMouseLeftButtonUp="OnSuggestionClicked">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Focusable" Value="False" />
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Display}" FontFamily="Consolas" />
+                                            <TextBlock Text="{Binding Detail}" Foreground="Gray" Margin="12,0,0,0" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </DockPanel>
+
+            <!-- Ściąga -->
+            <DockPanel Grid.Column="2" Margin="16,0,0,0" IsEnabled="{Binding HasSelection}">
+                <DockPanel.Resources>
+                    <!-- Przycisk składni: Tag to szablon, | to miejsce kursora; bez fokusu, żeby kursor został w polu WHERE -->
+                    <Style x:Key="Snippet" TargetType="Button">
+                        <Setter Property="Focusable" Value="False" />
+                        <Setter Property="MinWidth" Value="34" />
+                        <Setter Property="Padding" Value="6,2" />
+                        <Setter Property="Margin" Value="0,0,4,4" />
+                        <Setter Property="FontFamily" Value="Consolas" />
+                        <EventSetter Event="Click" Handler="OnSnippetClick" />
+                    </Style>
+                    <Style x:Key="SnippetGroup" TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="Gray" />
+                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="Margin" Value="0,6,0,2" />
+                    </Style>
+                </DockPanel.Resources>
+
+                <TextBlock DockPanel.Dock="Top" Text="Kolumny (dwuklik wstawia)" Style="{StaticResource SectionHeader}" />
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <TextBlock Text="Składnia (klik wstawia w miejscu kursora)" Style="{StaticResource SectionHeader}" />
+
+                    <TextBlock Text="Porównania" Style="{StaticResource SnippetGroup}" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Snippet}" Content="=" Tag="=" ToolTip="równe" />
+                        <Button Style="{StaticResource Snippet}" Content="!=" Tag="!=" ToolTip="różne (NULL nie spełnia)" />
+                        <Button Style="{StaticResource Snippet}" Content="&lt;" Tag="&lt;" ToolTip="mniejsze" />
+                        <Button Style="{StaticResource Snippet}" Content="&lt;=" Tag="&lt;=" ToolTip="mniejsze lub równe" />
+                        <Button Style="{StaticResource Snippet}" Content="&gt;" Tag="&gt;" ToolTip="większe" />
+                        <Button Style="{StaticResource Snippet}" Content="&gt;=" Tag="&gt;=" ToolTip="większe lub równe" />
+                    </WrapPanel>
+
+                    <TextBlock Text="Listy i wzorce" Style="{StaticResource SnippetGroup}" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Snippet}" Content="IN ( )" Tag="IN (|)" ToolTip="jedna z wartości: rodzaj IN ('m', 'g')" />
+                        <Button Style="{StaticResource Snippet}" Content="NOT IN ( )" Tag="NOT IN (|)" ToolTip="żadna z wartości" />
+                        <Button Style="{StaticResource Snippet}" Content="LIKE ''" Tag="LIKE '|'" ToolTip="wzorzec tekstu: % dowolny ciąg, _ jeden znak" />
+                        <Button Style="{StaticResource Snippet}" Content="NOT LIKE ''" Tag="NOT LIKE '|'" ToolTip="tekst niepasujący do wzorca" />
+                        <Button Style="{StaticResource Snippet}" Content="BETWEEN … AND …" Tag="BETWEEN | AND" ToolTip="zakres z końcami: x BETWEEN 2 AND 5" />
+                        <Button Style="{StaticResource Snippet}" Content="NOT BETWEEN" Tag="NOT BETWEEN | AND" ToolTip="poza zakresem" />
+                    </WrapPanel>
+
+                    <TextBlock Text="Brak wartości" Style="{StaticResource SnippetGroup}" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Snippet}" Content="IS NULL" Tag="IS NULL" ToolTip="pole puste" />
+                        <Button Style="{StaticResource Snippet}" Content="IS NOT NULL" Tag="IS NOT NULL" ToolTip="pole wypełnione" />
+                    </WrapPanel>
+
+                    <TextBlock Text="Łączniki" Style="{StaticResource SnippetGroup}" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource Snippet}" Content="AND" Tag="AND" ToolTip="oba warunki (wiąże mocniej niż OR)" />
+                        <Button Style="{StaticResource Snippet}" Content="OR" Tag="OR" ToolTip="którykolwiek warunek" />
+                        <Button Style="{StaticResource Snippet}" Content="NOT" Tag="NOT" ToolTip="zaprzeczenie następnego warunku" />
+                        <Button Style="{StaticResource Snippet}" Content="( )" Tag="(|)" ToolTip="nawias; zaznaczony tekst trafia do środka" />
+                    </WrapPanel>
+
+                    <TextBlock FontSize="11" Foreground="Gray" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Text="Teksty i daty w apostrofach: 'm', '2026-01-31', '2026-01-31 12:00' (apostrof w tekście: ''). Liczby z kropką: 0.5. Pierwszeństwo: NOT, AND, OR. NULL jak w SQL: rodzaj != 'm' pomija budynki bez rodzaju. LIKE: PostgreSQL rozróżnia wielkość liter, SQL Server zwykle nie." />
+                </StackPanel>
+
+                <ListBox x:Name="ColumnsList" ItemsSource="{Binding Columns}" MinHeight="120"
+                         MouseDoubleClick="OnColumnDoubleClick" KeyDown="OnColumnKeyDown">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="ToolTip" Value="{Binding Description}" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:FilterColumnItem}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding KindName}" Foreground="Gray" FontSize="11"
+                                           VerticalAlignment="Center" Margin="8,0,0,0" />
+                                <TextBlock Text="{Binding Name}" FontFamily="Consolas" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

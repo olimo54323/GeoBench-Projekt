@@ -1,4 +1,5 @@
 using System.Windows;
+using GeoBench.Wpf.ViewModels;
 using GeoBench.Wpf.Views;
 using Microsoft.Win32;
 
@@ -15,6 +16,15 @@ namespace GeoBench.Wpf.Services
         void ShowError(string message, string title);
 
         void ShowAbout();
+
+        /// <summary>Okno stylu mapy; true, gdy użytkownik zapisał zmiany.</summary>
+        bool ShowMapStyle(MapStyleViewModel viewModel);
+
+        /// <summary>Niemodalne okno informacji o obiektach; closed jest wywoływane po jego zamknięciu.</summary>
+        void ShowFeatureInfo(FeatureInfoViewModel viewModel, Action closed);
+
+        /// <summary>Builder filtrów warstw (modalny).</summary>
+        void ShowFilterBuilder(FilterBuilderViewModel viewModel);
     }
 
     public sealed class DialogService : IDialogService
@@ -34,6 +44,31 @@ namespace GeoBench.Wpf.Services
             Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 
         public void ShowAbout() => new AboutWindow { Owner = Owner }.ShowDialog();
+
+        public bool ShowMapStyle(MapStyleViewModel viewModel) =>
+            new MapStyleWindow { Owner = Owner, DataContext = viewModel }.ShowDialog() == true;
+
+        public void ShowFeatureInfo(FeatureInfoViewModel viewModel, Action closed)
+        {
+            var owner = Owner;
+            var window = new FeatureInfoWindow { Owner = owner, DataContext = viewModel };
+            if (owner is { WindowState: WindowState.Normal })
+            {
+                // Przy prawej krawędzi okna głównego, żeby nie zasłaniać środka mapy
+                window.WindowStartupLocation = WindowStartupLocation.Manual;
+                window.Left = owner.Left + Math.Max(0, owner.ActualWidth - window.Width - 300);
+                window.Top = owner.Top + 80;
+            }
+            else
+            {
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            window.Closed += (_, _) => closed();
+            window.Show();
+        }
+
+        public void ShowFilterBuilder(FilterBuilderViewModel viewModel) =>
+            new FilterBuilderWindow { Owner = Owner, DataContext = viewModel }.ShowDialog();
 
         private static Window? Owner => Application.Current?.MainWindow is { IsLoaded: true } window ? window : null;
 

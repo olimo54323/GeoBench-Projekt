@@ -21,7 +21,8 @@
         <TextBlock Text="Źródła danych" Style="{StaticResource SectionHeader}" Margin="0,16,0,4" />
         <TextBlock TextWrapping="Wrap">
             • Ewidencja gruntów i budynków: usługa WFS powiatu 2464 (m. Częstochowa) oraz usługa zbiorcza GUGiK.<LineBreak />
-            • Plan ogólny gminy: plik GML w schemacie APP 2.0.
+            • Plan ogólny gminy: plik GML w schemacie APP 2.0.<LineBreak />
+            • Podkład mapy: © OpenStreetMap contributors (ODbL).
         </TextBlock>
 
         <Button Content="Zamknij" HorizontalAlignment="Right" Margin="0,16,0,0" IsCancel="True" IsDefault="True" />

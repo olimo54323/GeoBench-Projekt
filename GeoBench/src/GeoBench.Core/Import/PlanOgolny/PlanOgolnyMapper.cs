@@ -65,26 +65,7 @@ namespace GeoBench.Core.Import.PlanOgolny
         /// <summary>Identyfikator obiektu do logu: lokalnyId z idIIP, a gdy go brak – gml:id.</summary>
         public static string? Identifier(FeatureRecord record) => record.GetValue("lokalnyId") ?? record.GmlId;
 
-        private static (MultiPolygon? Geometry, GeometryStatus Status, string? Reason, int Arcs) MapGeometry(FeatureRecord record, string property)
-        {
-            var source = record.GetGeometry(property);
-            if (source == null)
-            {
-                var missing = GeometryNormalizer.Normalize(null);
-                return (null, missing.Status, missing.Reason, 0);
-            }
-
-            try
-            {
-                var reference = SpatialReference.Parse(source.SrsName ?? throw new FormatException("Geometria nie ma atrybutu srsName."));
-                var normalized = GeometryNormalizer.Normalize(CoordinateTransformer.Transform(source.Geometry, reference, GeoBenchContext.Srid));
-                return (normalized.Geometry, normalized.Status, normalized.Reason, source.ArcCount);
-            }
-            catch (Exception ex) when (ex is FormatException or NotSupportedException)
-            {
-                return (null, GeometryStatus.Rejected, ex.Message, source.ArcCount);
-            }
-        }
+        private static MappedGeometry MapGeometry(FeatureRecord record, string property) => GeometryMapping.Map(record, property);
 
         private static RodzajStrefyPlanistycznej Rodzaj(FeatureRecord record)
         {

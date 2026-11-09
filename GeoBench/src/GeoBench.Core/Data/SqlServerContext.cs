@@ -1,3 +1,4 @@
+using GeoBench.Core.Data.Bulk;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
@@ -34,12 +35,29 @@ namespace GeoBench.Core.Data
         public const string SpatialIndexGrids = "LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM";
         public const int SpatialIndexCellsPerObject = 16;
 
-        protected override string SpatialIndexSql(string table, string column, Envelope extent)
+        private static string SpatialIndexName(string table, string column) => $"six_{table}_{column}";
+
+        protected override string DropSpatialIndexSql(string table, string column)
         {
-            var index = $"six_{table}_{column}";
+            var index = SpatialIndexName(table, column);
             return $"""
                 IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'{index}' AND object_id = OBJECT_ID(N'{table}'))
                     DROP INDEX [{index}] ON [{table}];
+                """;
+        }
+
+        // TRUNCATE zeruje też licznik IDENTITY
+        protected override string TruncateSql(string table) => $"TRUNCATE TABLE [{table}];";
+
+        public override Task BulkInsertAsync<TEntity>(BulkTable<TEntity> table, IReadOnlyCollection<TEntity> rows,
+            CancellationToken cancellationToken = default) =>
+            SqlServerBulkWriter.WriteAsync(this, table, rows, cancellationToken);
+
+        protected override string SpatialIndexSql(string table, string column, Envelope extent)
+        {
+            var index = SpatialIndexName(table, column);
+            return $"""
+                {DropSpatialIndexSql(table, column)}
                 CREATE SPATIAL INDEX [{index}] ON [{table}] ([{column}]) USING GEOMETRY_GRID
                     WITH (BOUNDING_BOX = ({SqlNumber(extent.MinX)}, {SqlNumber(extent.MinY)}, {SqlNumber(extent.MaxX)}, {SqlNumber(extent.MaxY)}),
                           GRIDS = ({SpatialIndexGrids}), CELLS_PER_OBJECT = {SpatialIndexCellsPerObject});

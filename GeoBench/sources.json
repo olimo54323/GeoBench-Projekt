@@ -1,0 +1,18 @@
+{
+  "Sources": [
+    {
+      "Name": "powiat-2464",
+      "Title": "Powiat 2464 (m. Częstochowa), WFS EGiB",
+      "Url": "https://geoportal.czestochowa.pl/wfs2464_egib/service.svc/get",
+      "Version": "2.0.0",
+      "SrsName": "urn:ogc:def:crs:EPSG::2180",
+      "PageSize": 5000,
+      "MaxParallelRequests": 2,
+      "Namespaces": "xmlns(gmgml,http://www.intergraph.com/geomedia/gml)",
+      "Layers": [
+        { "Name": "dzialki", "Title": "Działki", "TypeName": "gmgml:dzialki", "Target": "Dzialka", "SortBy": "ID_DZIALKI" },
+        { "Name": "budynki", "Title": "Budynki", "TypeName": "gmgml:budynki", "Target": "Budynek", "SortBy": "ID_BUDYNKU" }
+      ]
+    }
+  ]
+}

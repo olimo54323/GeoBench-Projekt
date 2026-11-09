@@ -1,3 +1,4 @@
+using GeoBench.Core.Data.Bulk;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
@@ -29,11 +30,22 @@ namespace GeoBench.Core.Data
             "SELECT current_setting('server_version') || ', PostGIS ' || postgis_lib_version()";
 
         // GiST nie potrzebuje zasięgu danych; parametr jest wspólny z indeksem siatkowym SQL Server
+        private static string SpatialIndexName(string table, string column) => $"ix_{table}_{column}";
+
+        protected override string DropSpatialIndexSql(string table, string column) =>
+            $"""DROP INDEX IF EXISTS "{SpatialIndexName(table, column)}";""";
+
+        protected override string TruncateSql(string table) => $"""TRUNCATE TABLE "{table}" RESTART IDENTITY;""";
+
+        public override Task BulkInsertAsync<TEntity>(BulkTable<TEntity> table, IReadOnlyCollection<TEntity> rows,
+            CancellationToken cancellationToken = default) =>
+            PostgresBulkWriter.WriteAsync(this, table, rows, cancellationToken);
+
         protected override string SpatialIndexSql(string table, string column, Envelope extent)
         {
-            var index = $"ix_{table}_{column}";
+            var index = SpatialIndexName(table, column);
             return $"""
-                DROP INDEX IF EXISTS "{index}";
+                {DropSpatialIndexSql(table, column)}
                 CREATE INDEX "{index}" ON "{table}" USING GIST ("{column}");
                 ANALYZE "{table}";
                 """;

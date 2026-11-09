@@ -2,8 +2,11 @@ using GeoBench.Core.Spatial;
 
 namespace GeoBench.Core.Import
 {
-    /// <summary>Postęp importu dla IProgress&lt;T&gt;: etap i liczba przetworzonych obiektów.</summary>
-    public sealed record ImportProgress(string Stage, int Processed);
+    /// <summary>
+    /// Postęp importu dla IProgress&lt;T&gt;: etap i liczba przetworzonych elementów (obiektów albo stron);
+    /// Total, gdy liczba wszystkich jest znana (np. stron WFS).
+    /// </summary>
+    public sealed record ImportProgress(string Stage, int Processed, int? Total = null);
 
     /// <summary>Obiekt, którego nie zapisano, z powodem (log odrzuconych).</summary>
     public sealed record RejectedFeature(string TypeName, string? Id, string Reason);
@@ -25,6 +28,9 @@ namespace GeoBench.Core.Import
         public int Read { get; set; }
 
         public int Saved { get; set; }
+
+        /// <summary>Obiekty o identyfikatorze już zapisanym w tym imporcie (np. na styku stron WFS); pomijane.</summary>
+        public int Duplicates { get; set; }
 
         public int GeometryValid { get; private set; }
         public int GeometryRepaired { get; private set; }
@@ -61,8 +67,20 @@ namespace GeoBench.Core.Import
             }
         }
 
+        /// <summary>Liczy geometrię przyjętego obiektu; naprawa i brak geometrii trafiają do ostrzeżeń.</summary>
+        public void Accept<T>(string typeName, string? id, MappedFeature<T> mapped) where T : class
+        {
+            CountGeometry(mapped.GeometryStatus);
+            AddArcs(mapped.ArcCount);
+            if (mapped.GeometryStatus == GeometryStatus.Repaired)
+                Warn(typeName, id, $"Geometria naprawiona: {mapped.GeometryReason}");
+            else if (mapped.GeometryStatus == GeometryStatus.Rejected)
+                Warn(typeName, id, $"Zapisano bez geometrii: {mapped.GeometryReason}");
+        }
+
         public override string ToString() =>
-            $"odczytane {Read}, zapisane {Saved}, odrzucone {Rejected.Count}, pominięte {Skipped}; " +
+            $"odczytane {Read}, zapisane {Saved}, odrzucone {Rejected.Count}, pominięte {Skipped}" +
+            (Duplicates > 0 ? $", duplikaty {Duplicates}" : "") + "; " +
             $"geometrie: poprawne {GeometryValid}, naprawione {GeometryRepaired}, odrzucone {GeometryRejected}, łuki {Arcs}; " +
             $"czas {Duration.TotalSeconds:F1} s";
     }

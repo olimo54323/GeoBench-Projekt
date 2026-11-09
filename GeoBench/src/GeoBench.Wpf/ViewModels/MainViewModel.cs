@@ -25,6 +25,9 @@ namespace GeoBench.Wpf.ViewModels
 
         void SetStatus(string text);
 
+        /// <summary>Postęp z wartością (np. strona 7/17); bez liczby wszystkich pasek jest nieokreślony.</summary>
+        void SetProgress(int processed, int? total);
+
         void AddLog(string message, bool isError = false);
     }
 
@@ -58,6 +61,22 @@ namespace GeoBench.Wpf.ViewModels
         [ObservableProperty]
         private string _statusText = "Gotowy";
 
+        [ObservableProperty]
+        private double _progressValue;
+
+        [ObservableProperty]
+        private double _progressMaximum = 1;
+
+        [ObservableProperty]
+        private bool _isProgressIndeterminate = true;
+
+        public void SetProgress(int processed, int? total)
+        {
+            IsProgressIndeterminate = total is null or <= 0;
+            ProgressMaximum = total is > 0 ? total.Value : 1;
+            ProgressValue = total is > 0 ? Math.Min(processed, total.Value) : 0;
+        }
+
         public async Task<bool> RunAsync(string description, Func<CancellationToken, Task> operation)
         {
             if (IsBusy)
@@ -65,6 +84,7 @@ namespace GeoBench.Wpf.ViewModels
 
             using var cancellation = new CancellationTokenSource();
             _cancellation = cancellation;
+            IsProgressIndeterminate = true;
             IsBusy = true;
             StatusText = description;
             AddLog($"{description}…");
@@ -127,6 +147,7 @@ namespace GeoBench.Wpf.ViewModels
         {
             Connections.TestCommand.NotifyCanExecuteChanged();
             Import.ImportCommand.NotifyCanExecuteChanged();
+            Import.WfsImportCommand.NotifyCanExecuteChanged();
         }
 
         [RelayCommand(CanExecute = nameof(IsBusy))]

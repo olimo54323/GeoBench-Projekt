@@ -16,7 +16,7 @@ namespace GeoBench.Core.Configuration
         public static IConfiguration Build()
         {
             var builder = new ConfigurationBuilder();
-            var file = FindFile(AppContext.BaseDirectory) ?? FindFile(Directory.GetCurrentDirectory());
+            var file = FindFile(FileName);
             if (file != null)
                 builder.AddJsonFile(file, optional: false);
             return builder.AddEnvironmentVariables().Build();
@@ -26,11 +26,18 @@ namespace GeoBench.Core.Configuration
             configuration.GetConnectionString(name)
             ?? throw new InvalidOperationException($"Brak connection stringa '{name}' w sekcji ConnectionStrings pliku {FileName}.");
 
-        private static string? FindFile(string startDirectory)
+        /// <summary>
+        /// Plik konfiguracji (appsettings.json, sources.json) szukany w górę od katalogu programu,
+        /// a potem od katalogu bieżącego.
+        /// </summary>
+        public static string? FindFile(string fileName) =>
+            FindFile(AppContext.BaseDirectory, fileName) ?? FindFile(Directory.GetCurrentDirectory(), fileName);
+
+        private static string? FindFile(string startDirectory, string fileName)
         {
             for (var dir = new DirectoryInfo(startDirectory); dir != null; dir = dir.Parent)
             {
-                var path = Path.Combine(dir.FullName, FileName);
+                var path = Path.Combine(dir.FullName, fileName);
                 if (File.Exists(path))
                     return path;
             }

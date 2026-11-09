@@ -1,4 +1,5 @@
 using System.Globalization;
+using GeoBench.Core.Data.Bulk;
 using GeoBench.Core.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -63,17 +64,62 @@ namespace GeoBench.Core.Data
         /// Tworzy (lub tworzy ponownie) indeks przestrzenny kolumny geometrii encji, po załadowaniu danych.
         /// Nazwy tabeli i kolumny pochodzą z modelu, więc obowiązuje ta sama konwencja nazw co w migracjach.
         /// </summary>
-        public Task CreateSpatialIndexAsync<TEntity>(string propertyName, Envelope extent, CancellationToken cancellationToken = default)
+        public async Task CreateSpatialIndexAsync<TEntity>(string propertyName, Envelope extent, CancellationToken cancellationToken = default)
+        {
+            var (table, column) = StoreNames<TEntity>(propertyName);
+            if (extent.IsNull || extent.Width <= 0 || extent.Height <= 0)
+                throw new ArgumentException("Zasięg indeksu przestrzennego musi mieć niezerową szerokość i wysokość.", nameof(extent));
+
+            // Indeks dla dziesiątek tysięcy geometrii buduje się dłużej niż domyślne 30 s
+            var previousTimeout = Database.GetCommandTimeout();
+            Database.SetCommandTimeout(LongCommandTimeout);
+            try
+            {
+                await Database.ExecuteSqlRawAsync(SpatialIndexSql(table, column, extent), cancellationToken);
+            }
+            finally
+            {
+                Database.SetCommandTimeout(previousTimeout);
+            }
+        }
+
+        /// <summary>Usuwa indeks przestrzenny przed ładowaniem masowym (wstawianie z indeksem jest wolniejsze).</summary>
+        public Task DropSpatialIndexAsync<TEntity>(string propertyName, CancellationToken cancellationToken = default)
+        {
+            var (table, column) = StoreNames<TEntity>(propertyName);
+            return Database.ExecuteSqlRawAsync(DropSpatialIndexSql(table, column), cancellationToken);
+        }
+
+        /// <summary>Opróżnia tabelę encji i zeruje licznik klucza (ponowny import zastępuje dane).</summary>
+        public Task TruncateAsync<TEntity>(CancellationToken cancellationToken = default)
+        {
+            var (table, _) = StoreNames<TEntity>(null);
+            return Database.ExecuteSqlRawAsync(TruncateSql(table), cancellationToken);
+        }
+
+        /// <summary>
+        /// Zapis masowy paczki encji z pominięciem śledzenia zmian EF (SqlBulkCopy / binarny COPY).
+        /// Działa w bieżącej transakcji kontekstu, jeśli jest otwarta. Nadanych kluczy (Oid) nie zwraca.
+        /// </summary>
+        public abstract Task BulkInsertAsync<TEntity>(BulkTable<TEntity> table, IReadOnlyCollection<TEntity> rows,
+            CancellationToken cancellationToken = default) where TEntity : class;
+
+        protected abstract string DropSpatialIndexSql(string table, string column);
+
+        protected abstract string TruncateSql(string table);
+
+        protected static readonly TimeSpan LongCommandTimeout = TimeSpan.FromMinutes(10);
+
+        private (string Table, string Column) StoreNames<TEntity>(string? propertyName)
         {
             var entity = Model.FindEntityType(typeof(TEntity))
                 ?? throw new InvalidOperationException($"Typ {typeof(TEntity).Name} nie należy do modelu.");
             var table = entity.GetTableName()!;
+            if (propertyName == null)
+                return (table, "");
             var column = entity.FindProperty(propertyName)?.GetColumnName(StoreObjectIdentifier.Table(table, entity.GetSchema()))
                 ?? throw new ArgumentException($"Encja {typeof(TEntity).Name} nie ma właściwości {propertyName}.", nameof(propertyName));
-            if (extent.IsNull || extent.Width <= 0 || extent.Height <= 0)
-                throw new ArgumentException("Zasięg indeksu przestrzennego musi mieć niezerową szerokość i wysokość.", nameof(extent));
-
-            return Database.ExecuteSqlRawAsync(SpatialIndexSql(table, column, extent), cancellationToken);
+            return (table, column);
         }
 
         /// <summary>Liczba w SQL niezależnie od ustawień regionalnych (przecinek zepsułby polecenie).</summary>

@@ -6,29 +6,59 @@
              xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:ImportViewModel}"
-             d:DesignWidth="800" d:DesignHeight="300">
-    <StackPanel Margin="12">
-        <TextBlock Text="Plan ogólny gminy (GML, APP 2.0)" Style="{StaticResource SectionHeader}" />
+             d:DesignWidth="800" d:DesignHeight="600">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="12">
+            <TextBlock Text="Bazy docelowe" Style="{StaticResource SectionHeader}" />
+            <StackPanel Orientation="Horizontal">
+                <CheckBox Content="SQL Server" IsChecked="{Binding ToSqlServer}" />
+                <CheckBox Content="PostgreSQL + PostGIS" IsChecked="{Binding ToPostgres}" Margin="24,0,0,0" />
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" Foreground="Gray" TextWrapping="Wrap"
+                       Text="Import przygotowuje dane i nie jest pomiarem. Po zapisie powstaje indeks przestrzenny." />
 
-        <DockPanel>
-            <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="Wybierz…" Command="{Binding BrowseCommand}" />
-            <TextBox Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
-        </DockPanel>
+            <!-- Usługa WFS EGiB -->
+            <TextBlock Text="Ewidencja gruntów i budynków (usługa WFS)" Style="{StaticResource SectionHeader}" Margin="0,20,0,8" />
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="Źródło:" VerticalAlignment="Center" Width="60" />
+                <ComboBox ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" DisplayMemberPath="Title" />
+            </DockPanel>
 
-        <TextBlock Text="Bazy docelowe" Style="{StaticResource SectionHeader}" Margin="0,16,0,8" />
-        <CheckBox Content="SQL Server" IsChecked="{Binding ToSqlServer}" />
-        <CheckBox Content="PostgreSQL + PostGIS" IsChecked="{Binding ToPostgres}" Margin="0,4,0,0" />
+            <ItemsControl ItemsSource="{Binding Layers}" Margin="60,8,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:WfsLayerItemViewModel}">
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <CheckBox Content="{Binding Title}" IsChecked="{Binding IsSelected}" Width="100" />
+                            <TextBlock Text="{Binding CacheState}" Foreground="Gray" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-        <CheckBox Margin="0,16,0,0" IsChecked="{Binding DaneBadawcze}"
-                  Content="Dane badawcze (plan nieobowiązujący, użyty wyłącznie do badania)" />
+            <CheckBox Margin="60,8,0,0" IsChecked="{Binding RefreshCache}"
+                      Content="Pobierz ponownie z usługi (zamiast korzystać z cache)" />
+            <TextBlock Margin="60,4,0,0" Foreground="Gray" TextWrapping="Wrap">
+                <Run Text="Cache: " /><Run Text="{Binding CacheDirectory, Mode=OneWay}" />
+                <LineBreak />
+                <Run Text="Obie bazy ładują te same strony z cache. Ponowny import zastępuje całą tabelę." />
+            </TextBlock>
+            <Button Margin="60,12,0,0" HorizontalAlignment="Left" Content="Pobierz i importuj" Command="{Binding WfsImportCommand}" />
 
-        <TextBlock Margin="0,12,0,0" Foreground="Gray" TextWrapping="Wrap"
-                   Text="Ponowny import tego samego aktu zastępuje poprzedni. Po zapisie powstaje indeks przestrzenny stref. Import nie jest pomiarem." />
+            <!-- Plan ogólny gminy -->
+            <TextBlock Text="Plan ogólny gminy (GML, APP 2.0)" Style="{StaticResource SectionHeader}" Margin="0,24,0,8" />
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Content="Wybierz…" Command="{Binding BrowseCommand}" />
+                <TextBox Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+            </DockPanel>
+            <CheckBox Margin="0,8,0,0" IsChecked="{Binding DaneBadawcze}"
+                      Content="Dane badawcze (plan nieobowiązujący, użyty wyłącznie do badania)" />
+            <TextBlock Margin="0,4,0,0" Foreground="Gray" TextWrapping="Wrap"
+                       Text="Ponowny import tego samego aktu zastępuje poprzedni." />
+            <Button Margin="0,12,0,0" HorizontalAlignment="Left" Content="Importuj plan" Command="{Binding ImportCommand}" />
 
-        <Button Margin="0,12,0,0" HorizontalAlignment="Left" Content="Importuj" Command="{Binding ImportCommand}" />
-
-        <TextBlock Text="Podsumowanie" Style="{StaticResource SectionHeader}" Margin="0,16,0,8" />
-        <TextBox Text="{Binding Summary, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="48"
-                 BorderThickness="0" Background="Transparent" />
-    </StackPanel>
+            <TextBlock Text="Podsumowanie" Style="{StaticResource SectionHeader}" Margin="0,24,0,8" />
+            <TextBox Text="{Binding Summary, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MinHeight="48"
+                     BorderThickness="0" Background="Transparent" />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

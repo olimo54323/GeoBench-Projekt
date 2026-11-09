@@ -73,7 +73,7 @@ namespace GeoBench.Core.Import.PlanOgolny
             }
 
             var akt = mappedAkt.Entity;
-            Accept(report, PlanOgolnyMapper.AktTypeName, akt.LokalnyId, mappedAkt);
+            report.Accept(PlanOgolnyMapper.AktTypeName, akt.LokalnyId, mappedAkt);
             AttachStrefy(report, akt, strefy);
 
             progress?.Report(new ImportProgress("Zapis", report.Read));
@@ -116,19 +116,9 @@ namespace GeoBench.Core.Import.PlanOgolny
                     continue;
                 }
 
-                Accept(report, PlanOgolnyMapper.StrefaTypeName, strefa.LokalnyId, mapped);
+                report.Accept(PlanOgolnyMapper.StrefaTypeName, strefa.LokalnyId, mapped);
                 akt.Strefy.Add(strefa);
             }
-        }
-
-        private static void Accept<T>(ImportReport report, string typeName, string id, MappedFeature<T> mapped) where T : class
-        {
-            report.CountGeometry(mapped.GeometryStatus);
-            report.AddArcs(mapped.ArcCount);
-            if (mapped.GeometryStatus == GeometryStatus.Repaired)
-                report.Warn(typeName, id, $"Geometria naprawiona: {mapped.GeometryReason}");
-            else if (mapped.GeometryStatus == GeometryStatus.Rejected)
-                report.Warn(typeName, id, $"Zapisano bez geometrii: {mapped.GeometryReason}");
         }
 
         private static async Task SaveAsync(GeoBenchContext context, AktPlanowania akt, CancellationToken cancellationToken)

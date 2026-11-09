@@ -430,4 +430,5 @@ FodyWeavers.xsd
 /docs/architecture.md
 /results
 /cache
+/GeoBench/cache/
 appsettings.json

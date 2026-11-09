@@ -1,5 +1,8 @@
+using System.Globalization;
 using GeoBench.Core.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using NetTopologySuite.Geometries;
 
 namespace GeoBench.Core.Data
 {
@@ -30,6 +33,51 @@ namespace GeoBench.Core.Data
 
         /// <summary>Typ kolumny dla daty i czasu bez strefy (np. pole DATA z WFS).</summary>
         protected abstract string LocalDateTimeColumnType { get; }
+
+        /// <summary>Zapytanie zwracające jeden tekst z wersją serwera (i rozszerzenia przestrzennego).</summary>
+        protected abstract string ServerVersionSql { get; }
+
+        /// <summary>
+        /// Polecenia tworzące od nowa indeks przestrzenny kolumny i odświeżające statystyki tabeli.
+        /// Zasięg danych jest potrzebny indeksowi siatkowemu SQL Server (BOUNDING_BOX).
+        /// </summary>
+        protected abstract string SpatialIndexSql(string table, string column, Envelope extent);
+
+        /// <summary>Wersja serwera bazy, np. do zakładki Połączenia i do raportu z pomiaru.</summary>
+        public async Task<string?> GetServerVersionAsync(CancellationToken cancellationToken = default)
+        {
+            await Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                await using var command = Database.GetDbConnection().CreateCommand();
+                command.CommandText = ServerVersionSql;
+                return Convert.ToString(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
+            }
+            finally
+            {
+                await Database.CloseConnectionAsync();
+            }
+        }
+
+        /// <summary>
+        /// Tworzy (lub tworzy ponownie) indeks przestrzenny kolumny geometrii encji, po załadowaniu danych.
+        /// Nazwy tabeli i kolumny pochodzą z modelu, więc obowiązuje ta sama konwencja nazw co w migracjach.
+        /// </summary>
+        public Task CreateSpatialIndexAsync<TEntity>(string propertyName, Envelope extent, CancellationToken cancellationToken = default)
+        {
+            var entity = Model.FindEntityType(typeof(TEntity))
+                ?? throw new InvalidOperationException($"Typ {typeof(TEntity).Name} nie należy do modelu.");
+            var table = entity.GetTableName()!;
+            var column = entity.FindProperty(propertyName)?.GetColumnName(StoreObjectIdentifier.Table(table, entity.GetSchema()))
+                ?? throw new ArgumentException($"Encja {typeof(TEntity).Name} nie ma właściwości {propertyName}.", nameof(propertyName));
+            if (extent.IsNull || extent.Width <= 0 || extent.Height <= 0)
+                throw new ArgumentException("Zasięg indeksu przestrzennego musi mieć niezerową szerokość i wysokość.", nameof(extent));
+
+            return Database.ExecuteSqlRawAsync(SpatialIndexSql(table, column, extent), cancellationToken);
+        }
+
+        /// <summary>Liczba w SQL niezależnie od ustawień regionalnych (przecinek zepsułby polecenie).</summary>
+        protected static string SqlNumber(double value) => value.ToString("R", CultureInfo.InvariantCulture);
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace GeoBench.Core.Data
 {
@@ -23,6 +24,20 @@ namespace GeoBench.Core.Data
 
         // Npgsql mapuje DateTime domyślnie na timestamptz i odrzuca wartości bez strefy (Kind = Unspecified)
         protected override string LocalDateTimeColumnType => "timestamp without time zone";
+
+        protected override string ServerVersionSql =>
+            "SELECT current_setting('server_version') || ', PostGIS ' || postgis_lib_version()";
+
+        // GiST nie potrzebuje zasięgu danych; parametr jest wspólny z indeksem siatkowym SQL Server
+        protected override string SpatialIndexSql(string table, string column, Envelope extent)
+        {
+            var index = $"ix_{table}_{column}";
+            return $"""
+                DROP INDEX IF EXISTS "{index}";
+                CREATE INDEX "{index}" ON "{table}" USING GIST ("{column}");
+                ANALYZE "{table}";
+                """;
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -543,7 +543,7 @@ namespace GeoBench.Wpf.ViewModels
         }
 
         /// <summary>Podświetlenie obiektów z okna informacji (geometria z bazy, przeliczona do 3857).</summary>
-        private void Highlight(IReadOnlyList<FeatureRecord> records)
+        private void Highlight(IReadOnlyList<FeatureDetails> records)
         {
             _podswietlenie.Features = records
                 .Where(r => r.Geometry != null)

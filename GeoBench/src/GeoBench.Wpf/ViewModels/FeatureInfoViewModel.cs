@@ -24,7 +24,7 @@ namespace GeoBench.Wpf.ViewModels
         private bool _isSelected;
 
         /// <summary>Obiekty do podświetlenia na mapie po wybraniu węzła.</summary>
-        public abstract IReadOnlyList<FeatureRecord> Records { get; }
+        public abstract IReadOnlyList<FeatureDetails> Records { get; }
     }
 
     /// <summary>Tabela (warstwa) ze znalezionymi obiektami.</summary>
@@ -46,7 +46,7 @@ namespace GeoBench.Wpf.ViewModels
 
         public IReadOnlyList<FeatureObjectNodeViewModel> Objects { get; }
 
-        public override IReadOnlyList<FeatureRecord> Records { get; }
+        public override IReadOnlyList<FeatureDetails> Records { get; }
 
         [RelayCommand]
         private void CopyTable() => Owner.Copy(FeatureAttributes.CopyTable(Records), $"tabelę {Table} ({Records.Count} obiektów)");
@@ -55,20 +55,20 @@ namespace GeoBench.Wpf.ViewModels
     /// <summary>Obiekt z polami.</summary>
     public sealed partial class FeatureObjectNodeViewModel : FeatureNodeViewModel
     {
-        public FeatureObjectNodeViewModel(FeatureInfoViewModel owner, FeatureRecord record, bool expanded) : base(owner)
+        public FeatureObjectNodeViewModel(FeatureInfoViewModel owner, FeatureDetails record, bool expanded) : base(owner)
         {
             Record = record;
             IsExpanded = expanded;
             Fields = record.Fields.Select(f => new FeatureFieldNodeViewModel(owner, this, f)).ToList();
         }
 
-        public FeatureRecord Record { get; }
+        public FeatureDetails Record { get; }
 
         public string Header => Record.Id;
 
         public IReadOnlyList<FeatureFieldNodeViewModel> Fields { get; }
 
-        public override IReadOnlyList<FeatureRecord> Records => [Record];
+        public override IReadOnlyList<FeatureDetails> Records => [Record];
 
         public bool HasGeometry => Record.Geometry != null;
 
@@ -100,7 +100,7 @@ namespace GeoBench.Wpf.ViewModels
 
         public string Value => Field.Value;
 
-        public override IReadOnlyList<FeatureRecord> Records => _parent.Records;
+        public override IReadOnlyList<FeatureDetails> Records => _parent.Records;
 
         [RelayCommand]
         private void CopyField() => Owner.Copy(FeatureAttributes.CopyField(Field), $"pole {Field.Name}");
@@ -118,10 +118,10 @@ namespace GeoBench.Wpf.ViewModels
     /// </summary>
     public sealed partial class FeatureInfoViewModel : ObservableObject
     {
-        private readonly Action<IReadOnlyList<FeatureRecord>> _highlight;
-        private IReadOnlyList<FeatureRecord> _all = [];
+        private readonly Action<IReadOnlyList<FeatureDetails>> _highlight;
+        private IReadOnlyList<FeatureDetails> _all = [];
 
-        public FeatureInfoViewModel(Action<IReadOnlyList<FeatureRecord>> highlight)
+        public FeatureInfoViewModel(Action<IReadOnlyList<FeatureDetails>> highlight)
         {
             _highlight = highlight;
         }

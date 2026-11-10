@@ -9,7 +9,7 @@ namespace GeoBench.Core.Data
     public sealed record FeatureField(string Name, string Value);
 
     /// <summary>Obiekt do podglądu: tabela, identyfikator, pola w kolejności kolumn i geometria w EPSG:2180.</summary>
-    public sealed record FeatureRecord(string Table, string Id, IReadOnlyList<FeatureField> Fields, Geometry? Geometry);
+    public sealed record FeatureDetails(string Table, string Id, IReadOnlyList<FeatureField> Fields, Geometry? Geometry);
 
     /// <summary>
     /// Pola i wartości encji według modelu EF (nazwy kolumn snake_case, kolejność jak w migracjach: klucz,
@@ -23,7 +23,7 @@ namespace GeoBench.Core.Data
         /// <summary>Koniec wiersza w kopiowanym tekście (CRLF: Excel, Notatnik i edytory Windows).</summary>
         public const string LineBreak = "\r\n";
 
-        public static FeatureRecord FromEntity<TEntity>(GeoBenchContext context, TEntity entity, string id) where TEntity : class
+        public static FeatureDetails FromEntity<TEntity>(GeoBenchContext context, TEntity entity, string id) where TEntity : class
         {
             var type = context.Model.FindEntityType(typeof(TEntity))
                 ?? throw new InvalidOperationException($"Typ {typeof(TEntity).Name} nie należy do modelu.");
@@ -51,7 +51,7 @@ namespace GeoBench.Core.Data
                     fields.Add(new FeatureField(name, Format(value)));
                 }
             }
-            return new FeatureRecord(table, id, fields, geometry);
+            return new FeatureDetails(table, id, fields, geometry);
         }
 
         /// <summary>Nazwa tabeli encji w bazie (np. dzialka).</summary>
@@ -78,13 +78,13 @@ namespace GeoBench.Core.Data
         public static string CopyField(FeatureField field) => $"{field.Name}\t{field.Value}";
 
         /// <summary>Cały obiekt: wiersz <c>pole\twartość</c> dla każdego pola.</summary>
-        public static string CopyRecord(FeatureRecord record) => string.Join(LineBreak, record.Fields.Select(CopyField));
+        public static string CopyRecord(FeatureDetails record) => string.Join(LineBreak, record.Fields.Select(CopyField));
 
         /// <summary>
         /// Tabela: wiersz nagłówka z nazwami pól, potem jeden wiersz na obiekt, wartości rozdzielone tabulatorem
         /// (wkleja się do arkusza jako tabela). Pole, którego obiekt nie ma (np. geometria null), jest puste.
         /// </summary>
-        public static string CopyTable(IEnumerable<FeatureRecord> records)
+        public static string CopyTable(IEnumerable<FeatureDetails> records)
         {
             var list = records.ToList();
             var names = new List<string>();

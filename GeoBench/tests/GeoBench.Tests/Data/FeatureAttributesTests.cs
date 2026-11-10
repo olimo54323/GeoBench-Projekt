@@ -108,8 +108,8 @@ namespace GeoBench.Tests.Data
         [Fact]
         public void CopyFormats_UseTabsAndLineBreaks()
         {
-            var first = new FeatureRecord("budynek", "a", new[] { new FeatureField("oid", "1"), new FeatureField("rodzaj", "m") }, null);
-            var second = new FeatureRecord("budynek", "b", new[] { new FeatureField("oid", "2"), new FeatureField("geom", "MultiPolygon (EPSG:2180)") }, null);
+            var first = new FeatureDetails("budynek", "a", new[] { new FeatureField("oid", "1"), new FeatureField("rodzaj", "m") }, null);
+            var second = new FeatureDetails("budynek", "b", new[] { new FeatureField("oid", "2"), new FeatureField("geom", "MultiPolygon (EPSG:2180)") }, null);
 
             Assert.Equal("rodzaj\tm", FeatureAttributes.CopyField(first.Fields[1]));
             Assert.Equal("oid\t1\r\nrodzaj\tm", FeatureAttributes.CopyRecord(first));

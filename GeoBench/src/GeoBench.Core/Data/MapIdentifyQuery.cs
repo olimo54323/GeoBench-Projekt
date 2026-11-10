@@ -7,7 +7,7 @@ using NetTopologySuite.Geometries;
 namespace GeoBench.Core.Data
 {
     /// <summary>Obiekty jednej tabeli znalezione w punkcie mapy; Truncated, gdy było ich więcej niż limit.</summary>
-    public sealed record IdentifyResult(string Table, IReadOnlyList<FeatureRecord> Records, bool Truncated);
+    public sealed record IdentifyResult(string Table, IReadOnlyList<FeatureDetails> Records, bool Truncated);
 
     /// <summary>
     /// Identyfikacja obiektów w klikniętym miejscu mapy: pełne rekordy przecinające mały kwadrat wokół punktu

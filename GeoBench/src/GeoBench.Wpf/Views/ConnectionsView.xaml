@@ -29,6 +29,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.ColumnSpan="2" Text="{Binding Name}" Style="{StaticResource SectionHeader}" />
@@ -55,6 +56,13 @@
 
                             <TextBlock Grid.Row="4" Text="Błąd:" />
                             <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Error}" Foreground="DarkRed" TextWrapping="Wrap" />
+
+                            <Button Grid.Row="5" Grid.Column="1" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="10,2"
+                                    Content="{Binding MigrateLabel}"
+                                    Command="{Binding DataContext.MigrateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}"
+                                    Visibility="{Binding CanMigrate, Converter={StaticResource BoolToVisibility}}"
+                                    ToolTip="Tworzy bazę (gdy jej nie ma) i nakłada migracje EF z aplikacji" />
                         </Grid>
                     </Border>
                 </DataTemplate>

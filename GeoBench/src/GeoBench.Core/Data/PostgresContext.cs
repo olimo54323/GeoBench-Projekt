@@ -26,8 +26,10 @@ namespace GeoBench.Core.Data
         // Npgsql mapuje DateTime domyślnie na timestamptz i odrzuca wartości bez strefy (Kind = Unspecified)
         protected override string LocalDateTimeColumnType => "timestamp without time zone";
 
+        // Wersja PostGIS z katalogu rozszerzeń: postgis_lib_version() nie istnieje w bazie przed migracją
         protected override string ServerVersionSql =>
-            "SELECT current_setting('server_version') || ', PostGIS ' || postgis_lib_version()";
+            "SELECT current_setting('server_version') || " +
+            "COALESCE(', PostGIS ' || (SELECT extversion FROM pg_extension WHERE extname = 'postgis'), ', bez PostGIS')";
 
         // GiST nie potrzebuje zasięgu danych; parametr jest wspólny z indeksem siatkowym SQL Server
         private static string SpatialIndexName(string table, string column) => $"ix_{table}_{column}";

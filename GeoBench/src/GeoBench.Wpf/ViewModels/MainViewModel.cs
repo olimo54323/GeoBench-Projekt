@@ -44,7 +44,7 @@ namespace GeoBench.Wpf.ViewModels
             // ViewModel powstaje w wątku interfejsu (App.OnStartup)
             _dispatcher = Dispatcher.CurrentDispatcher;
             _dialogs = dialogs;
-            Connections = new ConnectionsViewModel(factory, this);
+            Connections = new ConnectionsViewModel(factory, this, dialogs);
             Import = new ImportViewModel(factory, this, dialogs);
             MapPanel = new MapViewModel(factory, this, dialogs);
         }
@@ -150,6 +150,7 @@ namespace GeoBench.Wpf.ViewModels
         partial void OnIsBusyChanged(bool value)
         {
             Connections.TestCommand.NotifyCanExecuteChanged();
+            Connections.MigrateCommand.NotifyCanExecuteChanged();
             Import.ImportCommand.NotifyCanExecuteChanged();
             Import.WfsImportCommand.NotifyCanExecuteChanged();
         }

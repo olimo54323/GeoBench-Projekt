@@ -47,7 +47,8 @@ namespace GeoBench.Wpf.ViewModels
             Connections = new ConnectionsViewModel(factory, this, dialogs);
             Import = new ImportViewModel(factory, this, dialogs);
             MapPanel = new MapViewModel(factory, this, dialogs);
-            Benchmark = new BenchmarkViewModel(factory, this, dialogs);
+            Results = new ResultsViewModel(this, dialogs);
+            Benchmark = new BenchmarkViewModel(factory, this, dialogs, () => Results.Reload());
         }
 
         public ConnectionsViewModel Connections { get; }
@@ -59,6 +60,9 @@ namespace GeoBench.Wpf.ViewModels
 
         /// <summary>Zakładka Benchmark.</summary>
         public BenchmarkViewModel Benchmark { get; }
+
+        /// <summary>Zakładka Wyniki (wykresy z raportów w katalogu results).</summary>
+        public ResultsViewModel Results { get; }
 
         public ObservableCollection<LogEntry> Log { get; } = [];
 

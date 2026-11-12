@@ -11,6 +11,9 @@ namespace GeoBench.Wpf.Services
         /// <summary>Ścieżka wybranego pliku albo null, gdy użytkownik zrezygnował.</summary>
         string? OpenFile(string title, string filter);
 
+        /// <summary>Ścieżka pliku do zapisu albo null, gdy użytkownik zrezygnował.</summary>
+        string? SaveFile(string title, string filter, string fileName, string initialDirectory);
+
         bool Confirm(string message, string title);
 
         void ShowError(string message, string title);
@@ -32,6 +35,22 @@ namespace GeoBench.Wpf.Services
         public string? OpenFile(string title, string filter)
         {
             var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
+            var owner = Owner;
+            var result = owner == null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
+            return result == true ? dialog.FileName : null;
+        }
+
+        public string? SaveFile(string title, string filter, string fileName, string initialDirectory)
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = title,
+                Filter = filter,
+                FileName = fileName,
+                InitialDirectory = initialDirectory,
+                AddExtension = true,
+                OverwritePrompt = true
+            };
             var owner = Owner;
             var result = owner == null ? dialog.ShowDialog() : dialog.ShowDialog(owner);
             return result == true ? dialog.FileName : null;

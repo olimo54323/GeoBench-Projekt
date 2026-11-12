@@ -45,11 +45,14 @@ namespace GeoBench.Wpf.ViewModels
         private readonly IOperationHost _host;
         private readonly IDialogService _dialogs;
         private readonly BenchmarkRunner _runner;
+        private readonly Action? _reportSaved;
 
-        public BenchmarkViewModel(GeoBenchContextFactory factory, IOperationHost host, IDialogService dialogs)
+        /// <param name="reportSaved">Wywoływane po zapisie raportu (np. odświeżenie listy w zakładce Wyniki).</param>
+        public BenchmarkViewModel(GeoBenchContextFactory factory, IOperationHost host, IDialogService dialogs, Action? reportSaved = null)
         {
             _host = host;
             _dialogs = dialogs;
+            _reportSaved = reportSaved;
             _runner = new BenchmarkRunner(factory);
             foreach (var variant in VariantFactory.All)
                 Variants.Add(new BenchmarkVariantItemViewModel(variant, () => RunCommand.NotifyCanExecuteChanged()));
@@ -148,6 +151,7 @@ namespace GeoBench.Wpf.ViewModels
             {
                 ResultsDirectory = directory;
                 _host.AddLog($"Raport zapisany w {directory}");
+                _reportSaved?.Invoke();
             }
         }
 

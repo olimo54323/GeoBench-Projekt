@@ -26,13 +26,17 @@ namespace GeoBench.Core.Reporting
             NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
         };
 
-        /// <summary>Katalog wyników dla serii rozpoczętej w podanej chwili.</summary>
-        public static string DefaultDirectory(DateTime startedAt)
+        /// <summary>Katalog results obok GeoBench.slnx (albo obok programu, gdy rozwiązania nie ma).</summary>
+        public static string ResultsRoot()
         {
             var solution = GeoBenchConfiguration.FindFile(SolutionFileName);
             var root = solution != null ? Path.GetDirectoryName(solution)! : AppContext.BaseDirectory;
-            return Path.Combine(root, "results", startedAt.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture));
+            return Path.Combine(root, "results");
         }
+
+        /// <summary>Katalog wyników dla serii rozpoczętej w podanej chwili.</summary>
+        public static string DefaultDirectory(DateTime startedAt) =>
+            Path.Combine(ResultsRoot(), startedAt.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture));
 
         /// <summary>Zapisuje raport i zwraca katalog z plikami.</summary>
         public static async Task<string> WriteAsync(BenchmarkReport report, string directory, CancellationToken cancellationToken = default)

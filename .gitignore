@@ -431,4 +431,5 @@ FodyWeavers.xsd
 /results
 /cache
 /GeoBench/cache/
+/GeoBench/results/
 appsettings.json

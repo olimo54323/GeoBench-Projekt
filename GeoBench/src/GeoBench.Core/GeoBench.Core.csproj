@@ -11,6 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Zapytania scenariuszy benchmarku (katalog sql obok GeoBench.slnx) wkompilowane w bibliotekę -->
+    <EmbeddedResource Include="..\..\sql\**\*.sql" Link="sql\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="CommunityToolkit.Diagnostics" Version="8.4.2" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />

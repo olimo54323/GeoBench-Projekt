@@ -135,6 +135,42 @@ namespace GeoBench.Core.Data.Migrations.Postgres
                         });
                 });
 
+            modelBuilder.Entity("GeoBench.Core.Model.BudynekStrefa", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("oid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Oid"));
+
+                    b.Property<string>("IdBudynku")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("id_budynku");
+
+                    b.Property<string>("Oznaczenie")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("oznaczenie");
+
+                    b.Property<string>("Wariant")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("wariant");
+
+                    b.HasKey("Oid")
+                        .HasName("pk_budynki_stref");
+
+                    b.HasIndex("Wariant", "IdBudynku")
+                        .HasDatabaseName("ix_budynki_stref_wariant_id_budynku");
+
+                    b.ToTable("budynki_stref", (string)null);
+                });
+
             modelBuilder.Entity("GeoBench.Core.Model.Dzialka", b =>
                 {
                     b.Property<int>("Oid")

@@ -47,6 +47,7 @@ namespace GeoBench.Wpf.ViewModels
             Connections = new ConnectionsViewModel(factory, this, dialogs);
             Import = new ImportViewModel(factory, this, dialogs);
             MapPanel = new MapViewModel(factory, this, dialogs);
+            Benchmark = new BenchmarkViewModel(factory, this, dialogs);
         }
 
         public ConnectionsViewModel Connections { get; }
@@ -55,6 +56,9 @@ namespace GeoBench.Wpf.ViewModels
 
         /// <summary>Zakładka Mapa.</summary>
         public MapViewModel MapPanel { get; }
+
+        /// <summary>Zakładka Benchmark.</summary>
+        public BenchmarkViewModel Benchmark { get; }
 
         public ObservableCollection<LogEntry> Log { get; } = [];
 
@@ -153,6 +157,7 @@ namespace GeoBench.Wpf.ViewModels
             Connections.MigrateCommand.NotifyCanExecuteChanged();
             Import.ImportCommand.NotifyCanExecuteChanged();
             Import.WfsImportCommand.NotifyCanExecuteChanged();
+            Benchmark?.RunCommand.NotifyCanExecuteChanged();
         }
 
         [RelayCommand(CanExecute = nameof(IsBusy))]

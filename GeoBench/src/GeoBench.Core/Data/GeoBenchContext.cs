@@ -26,6 +26,9 @@ namespace GeoBench.Core.Data
         public DbSet<AktPlanowania> AktyPlanowania => Set<AktPlanowania>();
         public DbSet<StrefaPlanistyczna> StrefyPlanistyczne => Set<StrefaPlanistyczna>();
 
+        /// <summary>Wyniki scenariusza 4 (budynek w strefie) dla każdego wariantu.</summary>
+        public DbSet<BudynekStrefa> BudynkiStref => Set<BudynekStrefa>();
+
         /// <summary>Typ kolumny geometrii dla danego typu OGC (np. MultiPolygon).</summary>
         protected abstract string GeometryColumnType(string geometryType);
 
@@ -188,6 +191,17 @@ namespace GeoBench.Core.Data
                 e.Property(x => x.Geom).HasColumnType(GeometryColumnType("MultiPolygon"));
                 e.HasOne(x => x.AktPlanowania).WithMany(a => a.Strefy).HasForeignKey(x => x.AktPlanowaniaOid);
                 e.HasIndex(x => new { x.AktPlanowaniaOid, x.Oznaczenie }).IsUnique();
+            });
+
+            // Tabele wyników scenariuszy: bez kluczy obcych, bo powiązanie jest po identyfikatorach biznesowych
+            modelBuilder.Entity<BudynekStrefa>(e =>
+            {
+                e.ToTable("budynki_stref");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdBudynku).HasMaxLength(200);
+                e.Property(x => x.Oznaczenie).HasMaxLength(100);
+                e.HasIndex(x => new { x.Wariant, x.IdBudynku });
             });
         }
     }

@@ -59,6 +59,9 @@
                 <TabItem Header="Mapa">
                     <views:MapView DataContext="{Binding MapPanel}" />
                 </TabItem>
+                <TabItem Header="Benchmark">
+                    <views:BenchmarkView DataContext="{Binding Benchmark}" />
+                </TabItem>
             </TabControl>
 
             <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />

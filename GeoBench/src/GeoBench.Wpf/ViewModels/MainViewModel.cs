@@ -169,5 +169,9 @@ namespace GeoBench.Wpf.ViewModels
 
         [RelayCommand]
         private void ShowAbout() => _dialogs.ShowAbout();
+
+        /// <summary>Katalog results (dostępny zawsze, także w trakcie operacji).</summary>
+        [RelayCommand]
+        private void OpenResultsFolder() => _dialogs.OpenFolder(GeoBench.Core.Reporting.BenchmarkReportWriter.ResultsRoot());
     }
 }

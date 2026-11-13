@@ -51,6 +51,30 @@ namespace GeoBench.Core.Storage
             }
         }
 
+        /// <summary>Warunek SQL „geometria w kolumnie jest niepoprawna”.</summary>
+        protected abstract string InvalidCondition(string quotedColumn);
+
+        public async Task<IReadOnlyList<string>> InvalidIdsAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
+        {
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                var geometry = Quote(layer.GeometryColumn);
+                await using var command = CreateCommand(
+                    $"SELECT {Quote(layer.IdColumn)} FROM {Quote(layer.Table)} " +
+                    $"WHERE {geometry} IS NOT NULL AND {InvalidCondition(geometry)} ORDER BY {Quote(layer.IdColumn)}");
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                var ids = new List<string>();
+                while (await reader.ReadAsync(cancellationToken))
+                    ids.Add(ReadId(reader, 0));
+                return ids;
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
         public async IAsyncEnumerable<SpatialFeature> ReadFeaturesAsync(SpatialLayer layer,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {

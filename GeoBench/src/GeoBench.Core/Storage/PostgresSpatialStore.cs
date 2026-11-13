@@ -28,6 +28,8 @@ namespace GeoBench.Core.Storage
 
         protected override string Quote(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
+        protected override string InvalidCondition(string quotedColumn) => $"NOT ST_IsValid({quotedColumn})";
+
         // Połączenie kontekstu ma plugin NetTopologySuite (UseNetTopologySuite), więc sterownik zwraca typ NTS
         protected override Geometry ReadGeometry(DbDataReader reader, int ordinal) => reader.GetFieldValue<Geometry>(ordinal);
 

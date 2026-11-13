@@ -48,6 +48,7 @@
                 <CheckBox Content="Skala logarytmiczna" IsChecked="{Binding LogScale}" IsEnabled="{Binding CanUseLogScale}"
                           VerticalAlignment="Center" Margin="12,0,0,0" />
                 <Button Content="Eksportuj (PNG/SVG)…" Command="{Binding ExportCommand}" Margin="12,0,0,0" Padding="8,2" />
+                <Button Content="Otwórz katalog raportu" Command="{Binding OpenReportFolderCommand}" Margin="8,0,0,0" Padding="8,2" />
             </StackPanel>
             <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedKind.Hint}" Foreground="Gray" Margin="0,0,0,4" />
             <scottplot:WpfPlot x:Name="Chart" />

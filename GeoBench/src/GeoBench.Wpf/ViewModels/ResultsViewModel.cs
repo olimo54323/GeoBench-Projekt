@@ -141,6 +141,11 @@ namespace GeoBench.Wpf.ViewModels
         public void Draw(ScottPlot.Plot plot) =>
             BenchmarkChartRenderer.Draw(plot, SelectedKind.Kind, SelectedReports, LogScale && CanUseLogScale);
 
+        /// <summary>Katalog najnowszego zaznaczonego raportu, a bez zaznaczenia katalog results.</summary>
+        [RelayCommand]
+        private void OpenReportFolder() =>
+            _dialogs.OpenFolder(SelectedReports.OrderByDescending(r => r.StartedAt).FirstOrDefault()?.Directory ?? ResultsRoot);
+
         private bool CanExport() => Reports.Any(r => r.IsSelected);
 
         [RelayCommand(CanExecute = nameof(CanExport))]

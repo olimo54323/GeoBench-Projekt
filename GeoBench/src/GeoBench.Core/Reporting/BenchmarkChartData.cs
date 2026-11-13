@@ -63,7 +63,7 @@ namespace GeoBench.Core.Reporting
     {
         /// <summary>Kolejność faz na wykresie skumulowanym (od dołu).</summary>
         public static IReadOnlyList<string> PhaseOrder { get; } =
-            [InDatabaseStrategy.QueryPhase, NtsStrategy.ReadPhase, NtsStrategy.IndexPhase, NtsStrategy.ComputePhase];
+            [InDatabaseStrategy.QueryPhase, NtsStrategy.ReadPhase, NtsStrategy.PreparePhase, NtsStrategy.IndexPhase, NtsStrategy.ComputePhase];
 
         /// <summary>Stosunek największej do najmniejszej wartości, od którego proponowana jest skala logarytmiczna.</summary>
         public const double LogScaleRatio = 20;

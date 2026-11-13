@@ -35,6 +35,9 @@ namespace GeoBench.Core.Storage
         /// <summary>Liczba wierszy z niepustą geometrią (kontrola wstępna równych danych w obu bazach).</summary>
         Task<long> CountAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 
+        /// <summary>Identyfikatory obiektów z geometrią niepoprawną według walidatora silnika (poza pomiarem).</summary>
+        Task<IReadOnlyList<string>> InvalidIdsAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
+
         /// <summary>Strumieniowy odczyt identyfikatorów i geometrii w natywnym formacie silnika (bez EF).</summary>
         IAsyncEnumerable<SpatialFeature> ReadFeaturesAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 

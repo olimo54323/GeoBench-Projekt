@@ -34,6 +34,8 @@ namespace GeoBench.Core.Storage
 
         protected override string Quote(string identifier) => $"[{identifier.Replace("]", "]]")}]";
 
+        protected override string InvalidCondition(string quotedColumn) => $"{quotedColumn}.STIsValid() = 0";
+
         protected override Geometry ReadGeometry(DbDataReader reader, int ordinal) =>
             // Kolumna geometry to typ UDT: bez Microsoft.SqlServer.Types czytamy surowe bajty
             _geometryReader.Read(((SqlDataReader)reader).GetSqlBytes(ordinal).Value);

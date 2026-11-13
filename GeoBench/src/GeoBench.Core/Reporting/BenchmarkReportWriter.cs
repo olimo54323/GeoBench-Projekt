@@ -53,6 +53,14 @@ namespace GeoBench.Core.Reporting
                     await File.WriteAllTextAsync(Path.Combine(directory, $"messages_{variant.Code}.txt"), diagnostics.Messages, Encoding.UTF8, cancellationToken);
             }
 
+            // Niepoprawne geometrie z kontroli wstępnej: pełna lista identyfikatorów na silnik i tabelę
+            foreach (var count in report.Counts.Where(c => c.InvalidIds is { Count: > 0 }))
+            {
+                var engine = count.Engine == Data.DatabaseEngine.SqlServer ? "sqlserver" : "postgres";
+                var file = Path.Combine(directory, $"niepoprawne_{engine}_{count.Table ?? "warstwa"}.csv");
+                await File.WriteAllLinesAsync(file, count.InvalidIds!.Prepend("id"), new UTF8Encoding(true), cancellationToken);
+            }
+
             await using (var json = File.Create(Path.Combine(directory, "report.json")))
                 await JsonSerializer.SerializeAsync(json, report, JsonOptions, cancellationToken);
 

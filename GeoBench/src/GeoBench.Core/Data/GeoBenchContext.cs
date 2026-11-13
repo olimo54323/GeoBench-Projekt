@@ -29,6 +29,15 @@ namespace GeoBench.Core.Data
         /// <summary>Wyniki scenariusza 4 (budynek w strefie) dla każdego wariantu.</summary>
         public DbSet<BudynekStrefa> BudynkiStref => Set<BudynekStrefa>();
 
+        /// <summary>Wyniki scenariusza 05a (działka × strefa, pole przecięcia).</summary>
+        public DbSet<DzialkaStrefaPow> DzialkiStrefPow => Set<DzialkaStrefaPow>();
+
+        /// <summary>Wyniki scenariusza 05b (budynek × strefa, pole przecięcia).</summary>
+        public DbSet<BudynekStrefaPow> BudynkiStrefPow => Set<BudynekStrefaPow>();
+
+        /// <summary>Wyniki scenariusza 05c (działka × budynek, pole przecięcia).</summary>
+        public DbSet<BudynekDzialkaPow> BudynkiDzialekPow => Set<BudynekDzialkaPow>();
+
         /// <summary>Typ kolumny geometrii dla danego typu OGC (np. MultiPolygon).</summary>
         protected abstract string GeometryColumnType(string geometryType);
 
@@ -202,6 +211,36 @@ namespace GeoBench.Core.Data
                 e.Property(x => x.IdBudynku).HasMaxLength(200);
                 e.Property(x => x.Oznaczenie).HasMaxLength(100);
                 e.HasIndex(x => new { x.Wariant, x.IdBudynku });
+            });
+
+            modelBuilder.Entity<DzialkaStrefaPow>(e =>
+            {
+                e.ToTable("dzialki_stref_pow");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdDzialki).HasMaxLength(250);
+                e.Property(x => x.Oznaczenie).HasMaxLength(100);
+                e.HasIndex(x => new { x.Wariant, x.IdDzialki });
+            });
+
+            modelBuilder.Entity<BudynekStrefaPow>(e =>
+            {
+                e.ToTable("budynki_stref_pow");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdBudynku).HasMaxLength(200);
+                e.Property(x => x.Oznaczenie).HasMaxLength(100);
+                e.HasIndex(x => new { x.Wariant, x.IdBudynku });
+            });
+
+            modelBuilder.Entity<BudynekDzialkaPow>(e =>
+            {
+                e.ToTable("budynki_dzialek_pow");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdDzialki).HasMaxLength(250);
+                e.Property(x => x.IdBudynku).HasMaxLength(200);
+                e.HasIndex(x => new { x.Wariant, x.IdDzialki });
             });
         }
     }

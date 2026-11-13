@@ -26,6 +26,15 @@ namespace GeoBench.Core.Benchmark
         /// <summary>Czy pary mają miarę (np. pole przecięcia), sumowaną w odcisku wyniku.</summary>
         bool HasMeasure { get; }
 
+        /// <summary>
+        /// Czy scenariusz obsługuje niepoprawne geometrie (naprawa albo odrzucenie); wtedy kontrola wstępna
+        /// liczy je w każdej bazie i raport podaje ich identyfikatory.
+        /// </summary>
+        bool HandlesInvalidGeometries { get; }
+
+        /// <summary>Ustawienia serii przed pierwszym przebiegiem (np. wybór zapytania z naprawą geometrii).</summary>
+        void Configure(BenchmarkOptions options);
+
         /// <summary>Nowy, pusty przebieg NTS (stan jednego pomiaru: dane, indeks).</summary>
         INtsScenarioRun CreateNtsRun();
 
@@ -45,6 +54,12 @@ namespace GeoBench.Core.Benchmark
     {
         /// <summary>Faza odczytu: identyfikatory i geometrie z magazynu do pamięci.</summary>
         Task LoadAsync(ISpatialStore store, CancellationToken cancellationToken);
+
+        /// <summary>Czy przebieg ma fazę przygotowania (np. kontrola i naprawa geometrii).</summary>
+        bool HasPreparation { get; }
+
+        /// <summary>Faza przygotowania danych po odczycie, mierzona osobno.</summary>
+        void Prepare(CancellationToken cancellationToken);
 
         /// <summary>Faza indeksu: STRtree i geometrie przygotowane (PreparedGeometry).</summary>
         void BuildIndex();

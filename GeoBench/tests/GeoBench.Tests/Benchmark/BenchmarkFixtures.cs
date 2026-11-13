@@ -60,6 +60,14 @@ namespace GeoBench.Tests.Benchmark
             };
         }
 
+        public FakeSpatialStore(Dictionary<SpatialLayer, IReadOnlyList<SpatialFeature>> layers)
+        {
+            _layers = layers;
+        }
+
+        public Task<IReadOnlyList<string>> InvalidIdsAsync(SpatialLayer layer, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<string>>(_layers[layer].Where(f => !f.Geometry.IsValid).Select(f => f.Id).ToList());
+
         public DatabaseEngine Engine => DatabaseEngine.Postgres;
 
         public GeoBenchContext Context => throw new NotSupportedException();

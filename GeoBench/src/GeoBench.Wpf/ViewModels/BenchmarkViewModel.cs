@@ -59,8 +59,8 @@ namespace GeoBench.Wpf.ViewModels
             SelectedScenario = Scenarios[0];
         }
 
-        /// <summary>Scenariusze gotowe do pomiaru (kolejne: 5 i 3).</summary>
-        public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } = [new PointInPolygonScenario()];
+        /// <summary>Scenariusze gotowe do pomiaru (kolejny: 3).</summary>
+        public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } = [new PointInPolygonScenario(), .. OverlayScenarios.All];
 
         public ObservableCollection<BenchmarkVariantItemViewModel> Variants { get; } = [];
 
@@ -68,7 +68,14 @@ namespace GeoBench.Wpf.ViewModels
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RunCommand))]
+        [NotifyPropertyChangedFor(nameof(CanRepairGeometries))]
         private IBenchmarkScenario? _selectedScenario;
+
+        /// <summary>Naprawa niepoprawnych geometrii; bez niej są odrzucane i wymieniane w raporcie (scenariusze 05a–05c).</summary>
+        [ObservableProperty]
+        private bool _repairInvalidGeometries;
+
+        public bool CanRepairGeometries => SelectedScenario?.HandlesInvalidGeometries == true;
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RunCommand))]
@@ -92,7 +99,6 @@ namespace GeoBench.Wpf.ViewModels
         private string? _referencePath;
 
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(OpenResultsDirectoryCommand))]
         private string? _resultsDirectory;
 
         [ObservableProperty]
@@ -126,6 +132,7 @@ namespace GeoBench.Wpf.ViewModels
                 Diagnostics = Diagnostics,
                 SaveResults = SaveResults,
                 AllowCountMismatch = AllowCountMismatch,
+                RepairInvalidGeometries = RepairInvalidGeometries,
                 ReferencePath = string.IsNullOrWhiteSpace(ReferencePath) ? null : ReferencePath
             };
             BenchmarkReport? report = null;
@@ -195,10 +202,11 @@ namespace GeoBench.Wpf.ViewModels
 
         private static string Ms(double? value) => value?.ToString("N1") ?? "";
 
-        private bool CanOpenResultsDirectory() => ResultsDirectory != null && Directory.Exists(ResultsDirectory);
-
-        [RelayCommand(CanExecute = nameof(CanOpenResultsDirectory))]
+        /// <summary>Katalog ostatniej serii, a bez niej katalog results; dostępne zawsze, także w trakcie pomiaru.</summary>
+        [RelayCommand]
         private void OpenResultsDirectory() =>
-            Process.Start(new ProcessStartInfo(ResultsDirectory!) { UseShellExecute = true });
+            _dialogs.OpenFolder(ResultsDirectory != null && Directory.Exists(ResultsDirectory)
+                ? ResultsDirectory
+                : BenchmarkReportWriter.ResultsRoot());
     }
 }

@@ -40,6 +40,8 @@ namespace GeoBench.Core.Benchmark
                 + (options.SaveResults ? variants.Count : 0) + 1;
             void Report(string message) => progress?.Report(new BenchmarkProgress(message, ++step, totalSteps));
 
+            scenario.Configure(options);
+
             Report("Kontrola wstępna danych");
             await CheckCountsAsync(scenario, variants, options, report, cancellationToken);
 
@@ -104,7 +106,11 @@ namespace GeoBench.Core.Benchmark
                     var count = await store.CountAsync(layer, cancellationToken);
                     if (count == 0)
                         throw new InvalidOperationException($"Brak danych w tabeli {layer.Table} ({EngineName(engine)}): najpierw zaimportuj {layer.Name}.");
-                    report.Counts.Add(new LayerCount(engine, layer.Name, count));
+                    // Niepoprawne geometrie według walidatora silnika: liczba i identyfikatory do raportu
+                    var invalid = scenario.HandlesInvalidGeometries
+                        ? await store.InvalidIdsAsync(layer, cancellationToken)
+                        : [];
+                    report.Counts.Add(new LayerCount(engine, layer.Name, count, layer.Table, invalid.Count, invalid));
                 }
             }
 
@@ -177,6 +183,17 @@ namespace GeoBench.Core.Benchmark
 
             var countA = report.Counts.FirstOrDefault(c => c.Engine == variant.Engine && c.Layer == scenario.LayerA.Name)?.Count ?? 0;
             result.Notes.InsertRange(0, scenario.Describe(result.Pairs, countA));
+
+            if (scenario.HandlesInvalidGeometries)
+            {
+                var invalid = report.Counts.Where(c => c.Engine == variant.Engine && c.InvalidCount > 0)
+                    .Select(c => $"{c.Layer} {c.InvalidCount}").ToList();
+                var action = options.RepairInvalidGeometries ? "naprawiane" : "odrzucane";
+                result.Notes.Add(invalid.Count == 0
+                    ? $"niepoprawne geometrie w bazie {EngineName(variant.Engine)}: brak"
+                    : $"niepoprawne geometrie w bazie {EngineName(variant.Engine)} ({action}): {string.Join(", ", invalid)}; identyfikatory w plikach niepoprawne_*.csv" +
+                      (variant.Strategy.InDatabase ? "" : " (NTS sprawdza poprawność własnym algorytmem)"));
+            }
         }
 
         /// <summary>Porównanie każdego udanego wariantu ze wzorcem: CSV z QGIS albo pierwszym udanym wariantem.</summary>

@@ -26,13 +26,23 @@ namespace GeoBench.Core.Benchmark
 
         /// <summary>CSV z wynikiem wzorcowym z QGIS; bez niego wzorcem jest pierwszy udany wariant.</summary>
         public string? ReferencePath { get; init; }
+
+        /// <summary>
+        /// Niepoprawne geometrie naprawiane w ramach mierzonej pracy (MakeValid, ST_MakeValid, GeometryFixer);
+        /// bez naprawy są odrzucane i wymieniane w raporcie. Dotyczy scenariuszy nakładania (05a–05c).
+        /// </summary>
+        public bool RepairInvalidGeometries { get; init; }
     }
 
     /// <summary>Postęp serii: opis kroku i jego numer.</summary>
     public readonly record struct BenchmarkProgress(string Message, int Step, int TotalSteps);
 
-    /// <summary>Liczność warstwy w bazie z kontroli wstępnej.</summary>
-    public sealed record LayerCount(DatabaseEngine Engine, string Layer, long Count);
+    /// <summary>
+    /// Liczność warstwy w bazie z kontroli wstępnej; dla scenariuszy nakładania także niepoprawne geometrie
+    /// według walidatora silnika (STIsValid, ST_IsValid).
+    /// </summary>
+    public sealed record LayerCount(DatabaseEngine Engine, string Layer, long Count, string? Table = null,
+        int InvalidCount = 0, IReadOnlyList<string>? InvalidIds = null);
 
     /// <summary>Wynik jednego wariantu: czasy, odcisk, zgodność i diagnostyka.</summary>
     public sealed class VariantReport

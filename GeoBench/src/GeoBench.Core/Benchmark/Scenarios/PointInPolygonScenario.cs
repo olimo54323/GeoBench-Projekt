@@ -29,6 +29,12 @@ namespace GeoBench.Core.Benchmark.Scenarios
 
         public bool HasMeasure => false;
 
+        public bool HandlesInvalidGeometries => false;
+
+        public void Configure(BenchmarkOptions options)
+        {
+        }
+
         public INtsScenarioRun CreateNtsRun() => new Run();
 
         public IReadOnlyList<string> Describe(IReadOnlyList<ResultPair> pairs, long countA)
@@ -84,6 +90,12 @@ namespace GeoBench.Core.Benchmark.Scenarios
                     _zoneIds.Add(feature.Id);
                     _zones.Add(feature.Geometry);
                 }
+            }
+
+            public bool HasPreparation => false;
+
+            public void Prepare(CancellationToken cancellationToken)
+            {
             }
 
             public void BuildIndex()

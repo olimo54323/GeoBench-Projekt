@@ -28,6 +28,9 @@ namespace GeoBench.Wpf.Services
 
         /// <summary>Builder filtrów warstw (modalny).</summary>
         void ShowFilterBuilder(FilterBuilderViewModel viewModel);
+
+        /// <summary>Otwiera katalog w Eksploratorze (tworzy go, jeśli nie istnieje).</summary>
+        void OpenFolder(string path);
     }
 
     public sealed class DialogService : IDialogService
@@ -88,6 +91,12 @@ namespace GeoBench.Wpf.Services
 
         public void ShowFilterBuilder(FilterBuilderViewModel viewModel) =>
             new FilterBuilderWindow { Owner = Owner, DataContext = viewModel }.ShowDialog();
+
+        public void OpenFolder(string path)
+        {
+            System.IO.Directory.CreateDirectory(path);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+        }
 
         private static Window? Owner => Application.Current?.MainWindow is { IsLoaded: true } window ? window : null;
 

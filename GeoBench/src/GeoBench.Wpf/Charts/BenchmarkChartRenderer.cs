@@ -28,6 +28,7 @@ namespace GeoBench.Wpf.Charts
         {
             ["zapytanie"] = Color.FromHex("#7F8C8D"),
             ["odczyt"] = Color.FromHex("#2874A6"),
+            ["przygotowanie"] = Color.FromHex("#8E44AD"),
             ["indeks"] = Color.FromHex("#D68910"),
             ["obliczenie"] = Color.FromHex("#229954")
         };

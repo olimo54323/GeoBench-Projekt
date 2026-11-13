@@ -59,8 +59,15 @@ namespace GeoBench.Wpf.ViewModels
             SelectedScenario = Scenarios[0];
         }
 
-        /// <summary>Scenariusze gotowe do pomiaru (kolejny: 3).</summary>
-        public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } = [new PointInPolygonScenario(), .. OverlayScenarios.All];
+        /// <summary>Scenariusze gotowe do pomiaru.</summary>
+        public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } =
+            [.. WindowQueryScenarios.All, new PointInPolygonScenario(), .. OverlayScenarios.All];
+
+        /// <summary>Przy scenariuszu 3: wszystkie rozmiary okna po kolei (osobny raport na rozmiar).</summary>
+        [ObservableProperty]
+        private bool _runAllWindowSizes = true;
+
+        public bool IsWindowScenario => SelectedScenario is WindowQueryScenario;
 
         public ObservableCollection<BenchmarkVariantItemViewModel> Variants { get; } = [];
 
@@ -68,7 +75,7 @@ namespace GeoBench.Wpf.ViewModels
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(RunCommand))]
-        [NotifyPropertyChangedFor(nameof(CanRepairGeometries))]
+        [NotifyPropertyChangedFor(nameof(CanRepairGeometries), nameof(IsWindowScenario))]
         private IBenchmarkScenario? _selectedScenario;
 
         /// <summary>Naprawa niepoprawnych geometrii; bez niej są odrzucane i wymieniane w raporcie (scenariusze 05a–05c).</summary>
@@ -123,7 +130,9 @@ namespace GeoBench.Wpf.ViewModels
         [RelayCommand(CanExecute = nameof(CanRun))]
         private async Task RunAsync()
         {
-            var scenario = SelectedScenario!;
+            var scenarios = SelectedScenario is WindowQueryScenario && RunAllWindowSizes
+                ? Scenarios.OfType<WindowQueryScenario>().Cast<IBenchmarkScenario>().ToList()
+                : [SelectedScenario!];
             var variants = Variants.Where(v => v.IsSelected).Select(v => v.Variant).ToList();
             var options = new BenchmarkOptions
             {
@@ -135,36 +144,36 @@ namespace GeoBench.Wpf.ViewModels
                 RepairInvalidGeometries = RepairInvalidGeometries,
                 ReferencePath = string.IsNullOrWhiteSpace(ReferencePath) ? null : ReferencePath
             };
-            BenchmarkReport? report = null;
-            string? directory = null;
+            var first = true;
 
-            await _host.RunAsync($"Benchmark: scenariusz {scenario.Id}", async cancellationToken =>
+            await _host.RunAsync($"Benchmark: scenariusz {string.Join(", ", scenarios.Select(s => s.Id))}", async cancellationToken =>
             {
-                // Progress powstaje w wątku interfejsu, więc zgłoszenia z pomiaru wracają do niego
-                var progress = new Progress<BenchmarkProgress>(p =>
+                foreach (var scenario in scenarios)
                 {
-                    _host.SetStatus($"Scenariusz {scenario.Id}: {p.Message}");
-                    _host.SetProgress(p.Step, p.TotalSteps);
-                });
-                // Pomiar poza wątkiem interfejsu (NTS liczy synchronicznie)
-                report = await Task.Run(() => _runner.RunAsync(scenario, variants, options, progress, cancellationToken), cancellationToken);
-                directory = await BenchmarkReportWriter.WriteAsync(report, BenchmarkReportWriter.DefaultDirectory(report.StartedAt), cancellationToken);
-            });
+                    // Progress powstaje w wątku interfejsu, więc zgłoszenia z pomiaru wracają do niego
+                    var progress = new Progress<BenchmarkProgress>(p =>
+                    {
+                        _host.SetStatus($"Scenariusz {scenario.Id}: {p.Message}");
+                        _host.SetProgress(p.Step, p.TotalSteps);
+                    });
+                    // Pomiar poza wątkiem interfejsu (NTS liczy synchronicznie)
+                    var report = await Task.Run(() => _runner.RunAsync(scenario, variants, options, progress, cancellationToken), cancellationToken);
+                    var directory = await BenchmarkReportWriter.WriteAsync(report, BenchmarkReportWriter.DefaultDirectory(report.StartedAt), cancellationToken);
 
-            if (report == null)
-                return;
-            ShowReport(report);
-            if (directory != null)
-            {
-                ResultsDirectory = directory;
-                _host.AddLog($"Raport zapisany w {directory}");
-                _reportSaved?.Invoke();
-            }
+                    // Wyniki każdego rozmiaru od razu w tabeli i w zakładce Wyniki, także gdy kolejny zostanie przerwany
+                    ShowReport(report, append: !first, withScenario: scenarios.Count > 1);
+                    first = false;
+                    ResultsDirectory = directory;
+                    _host.AddLog($"Raport zapisany w {directory}");
+                    _reportSaved?.Invoke();
+                }
+            });
         }
 
-        private void ShowReport(BenchmarkReport report)
+        private void ShowReport(BenchmarkReport report, bool append = false, bool withScenario = false)
         {
-            Results.Clear();
+            if (!append)
+                Results.Clear();
             foreach (var v in report.Variants)
             {
                 var validation = v.Error != null
@@ -173,7 +182,7 @@ namespace GeoBench.Wpf.ViewModels
                 if (v.Succeeded && !v.ConsistentAcrossRuns)
                     validation += ", niestabilny";
                 var row = new BenchmarkResultRow(
-                    v.Label,
+                    withScenario ? $"{report.ScenarioId} {v.Label}" : v.Label,
                     v.Description,
                     Ms(v.Total?.MedianMs),
                     Ms(v.Total?.P95Ms),

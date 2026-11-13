@@ -51,6 +51,65 @@ namespace GeoBench.Core.Storage
             }
         }
 
+        /// <summary>Zapytanie zwracające jedną geometrię: obwiednię kolumny tabeli.</summary>
+        protected abstract string ExtentSql(string quotedTable, string quotedColumn);
+
+        public async Task<Envelope> ExtentAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
+        {
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                await using var command = CreateCommand(ExtentSql(Quote(layer.Table), Quote(layer.GeometryColumn)));
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken) || reader.IsDBNull(0))
+                    throw new InvalidOperationException($"Tabela {layer.Table} nie ma geometrii, więc nie ma zasięgu.");
+                return ReadGeometry(reader, 0).EnvelopeInternal;
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
+        public async Task<IReadOnlyList<ResultPair>> ExecuteParameterizedAsync(string sql, IReadOnlyList<ParameterSet> sets,
+            CancellationToken cancellationToken = default)
+        {
+            var pairs = new List<ResultPair>();
+            if (sets.Count == 0)
+                return pairs;
+
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                await using var command = CreateCommand(sql);
+                var parameters = sets[0].Values.Select(v =>
+                {
+                    var parameter = command.CreateParameter();
+                    parameter.ParameterName = "@" + v.Key;
+                    parameter.DbType = System.Data.DbType.Double;
+                    parameter.Value = v.Value;
+                    command.Parameters.Add(parameter);
+                    return parameter;
+                }).ToList();
+                // Jak w aplikacji mapowej: plan przygotowany raz, kolejne wywołania zmieniają tylko parametry
+                await command.PrepareAsync(cancellationToken);
+
+                foreach (var set in sets)
+                {
+                    for (var i = 0; i < parameters.Count; i++)
+                        parameters[i].Value = set.Values[i].Value;
+                    await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                    while (await reader.ReadAsync(cancellationToken))
+                        pairs.Add(new ResultPair(set.Key, ReadId(reader, 0)));
+                }
+                return pairs;
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
         /// <summary>Warunek SQL „geometria w kolumnie jest niepoprawna”.</summary>
         protected abstract string InvalidCondition(string quotedColumn);
 

@@ -64,7 +64,49 @@ namespace GeoBench.Wpf.Charts
                 case ChartKind.SeriesComparison:
                     DrawComparison(plot, reports, logScale);
                     break;
+                case ChartKind.WindowSizes:
+                    DrawWindowSizes(plot, reports, logScale);
+                    break;
             }
+        }
+
+        /// <summary>Scenariusz 3: linia na wariant, oś X to rozmiary okna (równe odstępy), oś Y mediana.</summary>
+        private static void DrawWindowSizes(Plot plot, IReadOnlyList<StoredReport> reports, bool logScale)
+        {
+            var (sizes, lines) = BenchmarkChartData.WindowSizes(reports);
+            plot.Title("Scenariusz 3: mediana czasu 100 zapytań a rozmiar okna");
+            if (sizes.Count == 0)
+            {
+                plot.Title("Zaznacz raporty scenariusza 3 (03-100, 03-500, 03-2000)");
+                return;
+            }
+
+            var values = lines.SelectMany(l => l.MediansMs).Where(v => v > 0 && double.IsFinite(v)).ToList();
+            var log = logScale && values.Count > 0;
+            double Y(double ms) => log ? Math.Log10(ms) : ms;
+
+            foreach (var line in lines)
+            {
+                // Tylko rozmiary z pomiarem tego wariantu
+                var points = line.MediansMs.Select((ms, i) => (X: (double)i, Ms: ms)).Where(p => p.Ms > 0 && double.IsFinite(p.Ms)).ToList();
+                if (points.Count == 0)
+                    continue;
+                var scatter = plot.Add.Scatter(points.Select(p => p.X).ToArray(), points.Select(p => Y(p.Ms)).ToArray());
+                scatter.Color = VariantColors[(line.Variant.Engine, line.Variant.Kind)];
+                scatter.LineWidth = 2;
+                scatter.MarkerSize = 8;
+                scatter.LegendText = line.Variant.Code;
+            }
+
+            plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(
+                sizes.Select((_, i) => (double)i).ToArray(),
+                sizes.Select(s => $"{s:0} × {s:0} m").ToArray());
+            if (log)
+                SetLogAxis(plot, values.Min(), values.Max());
+            plot.XLabel("rozmiar okna");
+            plot.YLabel(log ? "mediana (skala logarytmiczna)" : "mediana [ms]");
+            plot.ShowLegend(Alignment.UpperLeft);
+            plot.Axes.AutoScale();
         }
 
         private static string Title(StoredReport report, string what) =>

@@ -86,6 +86,17 @@ namespace GeoBench.Tests.Benchmark
         public Task<IReadOnlyList<ResultPair>> ExecuteScenarioAsync(string sql, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 
+        public Task<IReadOnlyList<ResultPair>> ExecuteParameterizedAsync(string sql, IReadOnlyList<ParameterSet> sets,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<Envelope> ExtentAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
+        {
+            var extent = new Envelope();
+            foreach (var feature in _layers[layer])
+                extent.ExpandToInclude(feature.Geometry.EnvelopeInternal);
+            return Task.FromResult(extent);
+        }
+
         public Task<QueryDiagnostics> DiagnoseAsync(string sql, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

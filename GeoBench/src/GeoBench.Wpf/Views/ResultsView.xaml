@@ -42,14 +42,15 @@
 
         <!-- Wykres -->
         <DockPanel Grid.Column="2">
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Text="Wykres:" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <ComboBox ItemsSource="{Binding ChartKinds}" SelectedItem="{Binding SelectedKind}" DisplayMemberPath="Name" MinWidth="220" />
+            <!-- WrapPanel: przy wąskim oknie przyciski przechodzą do drugiego wiersza zamiast znikać -->
+            <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,2">
+                <TextBlock Text="Wykres:" VerticalAlignment="Center" Margin="0,0,6,4" />
+                <ComboBox ItemsSource="{Binding ChartKinds}" SelectedItem="{Binding SelectedKind}" DisplayMemberPath="Name" MinWidth="220" Margin="0,0,12,4" />
                 <CheckBox Content="Skala logarytmiczna" IsChecked="{Binding LogScale}" IsEnabled="{Binding CanUseLogScale}"
-                          VerticalAlignment="Center" Margin="12,0,0,0" />
-                <Button Content="Eksportuj (PNG/SVG)…" Command="{Binding ExportCommand}" Margin="12,0,0,0" Padding="8,2" />
-                <Button Content="Otwórz katalog raportu" Command="{Binding OpenReportFolderCommand}" Margin="8,0,0,0" Padding="8,2" />
-            </StackPanel>
+                          VerticalAlignment="Center" Margin="0,0,12,4" />
+                <Button Content="Eksportuj (PNG/SVG)…" Command="{Binding ExportCommand}" Margin="0,0,8,4" Padding="8,2" />
+                <Button Content="Otwórz katalog raportu" Command="{Binding OpenReportFolderCommand}" Margin="0,0,8,4" Padding="8,2" />
+            </WrapPanel>
             <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedKind.Hint}" Foreground="Gray" Margin="0,0,0,4" />
             <scottplot:WpfPlot x:Name="Chart" />
         </DockPanel>

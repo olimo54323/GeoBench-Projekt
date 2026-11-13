@@ -73,7 +73,8 @@ namespace GeoBench.Wpf.ViewModels
             new(ChartKind.Medians, "Mediana i rozrzut (min–p95)", "Najnowszy zaznaczony raport."),
             new(ChartKind.Phases, "Fazy przetwarzania", "Najnowszy zaznaczony raport; skala liniowa."),
             new(ChartKind.Runs, "Wszystkie pomiary", "Najnowszy zaznaczony raport; skala liniowa."),
-            new(ChartKind.SeriesComparison, "Porównanie serii", "Wszystkie zaznaczone raporty, od najstarszego.")
+            new(ChartKind.SeriesComparison, "Porównanie serii", "Wszystkie zaznaczone raporty, od najstarszego."),
+            new(ChartKind.WindowSizes, "Czas a rozmiar okna (scenariusz 3)", "Zaznaczone raporty 03-*; przy powtórzonym rozmiarze najnowszy.")
         ];
 
         [ObservableProperty]
@@ -83,7 +84,7 @@ namespace GeoBench.Wpf.ViewModels
         private bool _logScale;
 
         /// <summary>Czy rodzaj wykresu obsługuje skalę logarytmiczną (fazy skumulowane i punkty – nie).</summary>
-        public bool CanUseLogScale => SelectedKind.Kind is ChartKind.Medians or ChartKind.SeriesComparison;
+        public bool CanUseLogScale => SelectedKind.Kind is ChartKind.Medians or ChartKind.SeriesComparison or ChartKind.WindowSizes;
 
         public IReadOnlyList<StoredReport> SelectedReports =>
             Reports.Where(r => r.IsSelected).Select(r => r.Report).ToList();

@@ -35,6 +35,22 @@ namespace GeoBench.Core.Benchmark
         /// <summary>Ustawienia serii przed pierwszym przebiegiem (np. wybór zapytania z naprawą geometrii).</summary>
         void Configure(BenchmarkOptions options);
 
+        /// <summary>
+        /// Przygotowanie serii poza pomiarem, raz na serię i wspólne dla wszystkich wariantów
+        /// (np. losowanie okien w zasięgu warstwy).
+        /// </summary>
+        Task PrepareAsync(ISpatialStore store, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        /// <summary>Mierzona część strategii w bazie: domyślnie jedno zapytanie, scenariusz okien – zapytanie na okno.</summary>
+        Task<IReadOnlyList<ResultPair>> ExecuteInDatabaseAsync(ISpatialStore store, string sql, CancellationToken cancellationToken) =>
+            store.ExecuteScenarioAsync(sql, cancellationToken);
+
+        /// <summary>Zapytanie do przebiegu diagnostycznego (scenariusz z parametrami wstawia wartości pierwszego wywołania).</summary>
+        string DiagnosticSql(DatabaseEngine engine) => ScenarioSql.Load(engine, SqlFileName);
+
+        /// <summary>Czy scenariusz ma tabelę wyników (zapis par po walidacji).</summary>
+        bool HasResultTable => true;
+
         /// <summary>Nowy, pusty przebieg NTS (stan jednego pomiaru: dane, indeks).</summary>
         INtsScenarioRun CreateNtsRun();
 

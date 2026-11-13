@@ -34,6 +34,9 @@ namespace GeoBench.Core.Storage
 
         protected override string Quote(string identifier) => $"[{identifier.Replace("]", "]]")}]";
 
+        protected override string ExtentSql(string quotedTable, string quotedColumn) =>
+            $"SELECT geometry::EnvelopeAggregate({quotedColumn}) FROM {quotedTable}";
+
         protected override string InvalidCondition(string quotedColumn) => $"{quotedColumn}.STIsValid() = 0";
 
         protected override Geometry ReadGeometry(DbDataReader reader, int ordinal) =>

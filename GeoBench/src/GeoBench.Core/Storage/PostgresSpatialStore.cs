@@ -28,6 +28,9 @@ namespace GeoBench.Core.Storage
 
         protected override string Quote(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
+        protected override string ExtentSql(string quotedTable, string quotedColumn) =>
+            $"SELECT ST_SetSRID(ST_Extent({quotedColumn})::geometry, {GeoBenchContext.Srid}) FROM {quotedTable}";
+
         protected override string InvalidCondition(string quotedColumn) => $"NOT ST_IsValid({quotedColumn})";
 
         // Połączenie kontekstu ma plugin NetTopologySuite (UseNetTopologySuite), więc sterownik zwraca typ NTS

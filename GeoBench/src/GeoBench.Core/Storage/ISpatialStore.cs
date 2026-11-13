@@ -12,6 +12,9 @@ namespace GeoBench.Core.Storage
         public static readonly SpatialLayer Strefy = new("strefy planistyczne", "strefa_planistyczna", "oznaczenie", "geom");
     }
 
+    /// <summary>Zestaw parametrów liczbowych jednego wywołania zapytania (nazwy bez @), z kluczem do par wyniku.</summary>
+    public sealed record ParameterSet(string Key, IReadOnlyList<KeyValuePair<string, double>> Values);
+
     /// <summary>Obiekt odczytany z magazynu: identyfikator biznesowy i geometria w EPSG:2180.</summary>
     public readonly record struct SpatialFeature(string Id, Geometry Geometry);
 
@@ -43,6 +46,16 @@ namespace GeoBench.Core.Storage
 
         /// <summary>Wykonuje zapytanie scenariusza i czyta wszystkie pary (kolumny id_a, id_b i opcjonalnie miara).</summary>
         Task<IReadOnlyList<ResultPair>> ExecuteScenarioAsync(string sql, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// To samo zapytanie wykonane kolejno dla każdego zestawu parametrów (polecenie przygotowane raz).
+        /// Para wyniku: klucz zestawu (np. okno) i identyfikator z pierwszej kolumny.
+        /// </summary>
+        Task<IReadOnlyList<ResultPair>> ExecuteParameterizedAsync(string sql, IReadOnlyList<ParameterSet> sets,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>Zasięg geometrii warstwy (poza pomiarem, np. do losowania okien).</summary>
+        Task<Envelope> ExtentAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 
         /// <summary>Przebieg diagnostyczny zapytania: rzeczywisty plan i statystyki serwera.</summary>
         Task<QueryDiagnostics> DiagnoseAsync(string sql, CancellationToken cancellationToken = default);

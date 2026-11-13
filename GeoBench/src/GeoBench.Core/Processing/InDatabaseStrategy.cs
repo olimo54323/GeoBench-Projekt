@@ -22,7 +22,7 @@ namespace GeoBench.Core.Processing
             var sql = ScenarioSql.Load(store.Engine, scenario.SqlFileName);
 
             var stopwatch = Stopwatch.StartNew();
-            var pairs = await store.ExecuteScenarioAsync(sql, cancellationToken);
+            var pairs = await scenario.ExecuteInDatabaseAsync(store, sql, cancellationToken);
             stopwatch.Stop();
 
             return new StrategyRun(pairs, [new PhaseTime(QueryPhase, stopwatch.Elapsed)]);

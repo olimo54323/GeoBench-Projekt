@@ -37,13 +37,17 @@ namespace GeoBench.Core.Benchmark
 
             var step = 0;
             var totalSteps = variants.Sum(v => options.Warmups + options.Repetitions + (options.Diagnostics && v.Strategy.InDatabase ? 1 : 0))
-                + (options.SaveResults ? variants.Count : 0) + 1;
+                + (options.SaveResults && scenario.HasResultTable ? variants.Count : 0) + 1;
             void Report(string message) => progress?.Report(new BenchmarkProgress(message, ++step, totalSteps));
 
             scenario.Configure(options);
 
             Report("Kontrola wstępna danych");
             await CheckCountsAsync(scenario, variants, options, report, cancellationToken);
+
+            // Przygotowanie wspólne dla wszystkich wariantów (np. okna), poza pomiarem
+            await using (var context = _factory.Create(variants[0].Engine))
+                await scenario.PrepareAsync(SpatialStore.Create(context), cancellationToken);
 
             IReadOnlyList<ResultPair>? reference = null;
             if (options.ReferencePath != null)
@@ -68,7 +72,7 @@ namespace GeoBench.Core.Benchmark
 
             Validate(report, reference);
 
-            if (options.SaveResults)
+            if (options.SaveResults && scenario.HasResultTable)
             {
                 foreach (var (variant, result) in variants.Zip(report.Variants))
                 {
@@ -101,7 +105,7 @@ namespace GeoBench.Core.Benchmark
             {
                 await using var context = _factory.Create(engine);
                 var store = SpatialStore.Create(context);
-                foreach (var layer in new[] { scenario.LayerA, scenario.LayerB })
+                foreach (var layer in new[] { scenario.LayerA, scenario.LayerB }.Distinct())
                 {
                     var count = await store.CountAsync(layer, cancellationToken);
                     if (count == 0)
@@ -178,7 +182,7 @@ namespace GeoBench.Core.Benchmark
             if (options.Diagnostics && variant.Strategy.InDatabase)
             {
                 progress($"{variant.Label}: przebieg diagnostyczny (plan zapytania)");
-                result.Diagnostics = await store.DiagnoseAsync(ScenarioSql.Load(variant.Engine, scenario.SqlFileName), cancellationToken);
+                result.Diagnostics = await store.DiagnoseAsync(scenario.DiagnosticSql(variant.Engine), cancellationToken);
             }
 
             var countA = report.Counts.FirstOrDefault(c => c.Engine == variant.Engine && c.Layer == scenario.LayerA.Name)?.Count ?? 0;

@@ -17,8 +17,14 @@ namespace GeoBench.Core.Reporting
         Runs,
 
         /// <summary>Mediany wariantów z kilku serii obok siebie.</summary>
-        SeriesComparison
+        SeriesComparison,
+
+        /// <summary>Scenariusz 3: mediana wariantów w funkcji rozmiaru okna (najnowszy raport na rozmiar).</summary>
+        WindowSizes
     }
+
+    /// <summary>Linia wykresu rozmiarów okna: wariant i mediany dla kolejnych rozmiarów (NaN, gdy brak pomiaru).</summary>
+    public sealed record WindowSizeLine(ChartVariant Variant, IReadOnlyList<double> MediansMs);
 
     /// <summary>Miejsce przetwarzania wariantu (wpływa na odcień koloru).</summary>
     public enum VariantKind
@@ -126,6 +132,31 @@ namespace GeoBench.Core.Reporting
             var codes = series.SelectMany(s => s.MediansMs.Keys).Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(CodeOrder).ThenBy(c => c, StringComparer.Ordinal).ToList();
             return (codes, series);
+        }
+
+        /// <summary>
+        /// Raporty scenariusza 3 (03-100, 03-500 …): rozmiary rosnąco i po jednej linii na wariant.
+        /// Przy kilku raportach tego samego rozmiaru liczy się najnowszy.
+        /// </summary>
+        public static (IReadOnlyList<double> Sizes, IReadOnlyList<WindowSizeLine> Lines) WindowSizes(IEnumerable<StoredReport> reports)
+        {
+            var bySize = reports
+                .Select(r => (Size: Benchmark.Scenarios.WindowQueryScenarios.SizeOf(r.ScenarioId), Report: r))
+                .Where(x => x.Size != null)
+                .GroupBy(x => x.Size!.Value)
+                .OrderBy(g => g.Key)
+                .Select(g => (Size: g.Key, Variants: Variants(g.OrderByDescending(x => x.Report.StartedAt).First().Report)))
+                .ToList();
+
+            var sizes = bySize.Select(x => x.Size).ToList();
+            var lines = bySize.SelectMany(x => x.Variants)
+                .GroupBy(v => v.Code, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => CodeOrder(g.Key))
+                .Select(g => new WindowSizeLine(g.First(), bySize
+                    .Select(x => x.Variants.FirstOrDefault(v => string.Equals(v.Code, g.Key, StringComparison.OrdinalIgnoreCase))?.MedianMs ?? double.NaN)
+                    .ToList()))
+                .ToList();
+            return (sizes, lines);
         }
 
         /// <summary>Nazwa serii w legendzie: scenariusz, data i edycja SQL Server (gdy ją mierzono).</summary>

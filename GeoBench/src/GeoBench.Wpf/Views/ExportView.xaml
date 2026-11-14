@@ -1,0 +1,71 @@
+<UserControl x:Class="GeoBench.Wpf.Views.ExportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ExportViewModel}"
+             d:DesignWidth="900" d:DesignHeight="600">
+    <Grid Margin="8">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="380" MinWidth="260" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Źródło: baza, tabela wyników, wariant; format i zapis -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Źródło" Style="{StaticResource SectionHeader}" />
+                <TextBlock Text="Baza" Margin="0,4,0,2" />
+                <ComboBox ItemsSource="{Binding Engines}" SelectedItem="{Binding SelectedEngine}" DisplayMemberPath="Name" />
+                <TextBlock Text="Tabela wyników" Margin="0,8,0,2" />
+                <ComboBox ItemsSource="{Binding Tables}" SelectedItem="{Binding SelectedTable}" DisplayMemberPath="Title" />
+                <TextBlock Text="Wariant" Margin="0,8,0,2" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Wczytaj warianty" Command="{Binding LoadVariantsCommand}" Margin="6,0,0,0" Padding="8,2" />
+                    <ComboBox ItemsSource="{Binding Variants}" SelectedItem="{Binding SelectedVariant}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock>
+                                    <Run Text="{Binding Variant, Mode=OneWay}" FontWeight="SemiBold" />
+                                    <Run Text="{Binding Rows, Mode=OneWay, StringFormat=({0:N0} wierszy)}" Foreground="Gray" />
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </DockPanel>
+                <TextBlock Text="{Binding VariantsInfo}" Foreground="Gray" TextWrapping="Wrap" FontSize="11" Margin="0,2,0,0" />
+
+                <TextBlock Text="Plik" Style="{StaticResource SectionHeader}" Margin="0,16,0,0" />
+                <TextBlock Text="Format" Margin="0,4,0,2" />
+                <ComboBox ItemsSource="{Binding Formats}" SelectedItem="{Binding SelectedFormat}" DisplayMemberPath="Name" />
+                <WrapPanel Margin="0,10,0,0">
+                    <Button Content="Eksportuj…" Command="{Binding ExportCommand}" Margin="0,0,8,4" Padding="12,3" FontWeight="SemiBold" />
+                    <Button Content="Otwórz katalog eksportu" Command="{Binding OpenExportDirectoryCommand}" Margin="0,0,8,4" Padding="8,3" />
+                </WrapPanel>
+                <TextBlock Text="{Binding ExportDirectory, StringFormat=Katalog: {0}}" Foreground="Gray" TextWrapping="Wrap" FontSize="11" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeDirection="Columns" Margin="4,0" />
+
+        <!-- Kolumny: zaznaczenie i kolejność w pliku -->
+        <DockPanel Grid.Column="2">
+            <TextBlock DockPanel.Dock="Top" Text="Kolumny (zaznaczone, w tej kolejności)" Style="{StaticResource SectionHeader}" />
+            <WrapPanel DockPanel.Dock="Top" Margin="0,4,0,4">
+                <Button Content="Do góry" Command="{Binding MoveUpCommand}" Margin="0,0,6,4" Padding="8,2" />
+                <Button Content="W dół" Command="{Binding MoveDownCommand}" Margin="0,0,6,4" Padding="8,2" />
+                <Button Content="Zaznacz wszystkie" Command="{Binding SelectAllColumnsCommand}" Margin="0,0,6,4" Padding="8,2" />
+            </WrapPanel>
+            <ListBox ItemsSource="{Binding Columns}" SelectedItem="{Binding SelectedColumn}" HorizontalContentAlignment="Stretch">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:ExportColumnItemViewModel}">
+                        <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Name}" Margin="0,2" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Grid>
+</UserControl>

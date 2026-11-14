@@ -49,6 +49,7 @@ namespace GeoBench.Wpf.ViewModels
             MapPanel = new MapViewModel(factory, this, dialogs);
             Results = new ResultsViewModel(this, dialogs);
             Benchmark = new BenchmarkViewModel(factory, this, dialogs, () => Results.Reload());
+            Export = new ExportViewModel(factory, this, dialogs);
         }
 
         public ConnectionsViewModel Connections { get; }
@@ -63,6 +64,9 @@ namespace GeoBench.Wpf.ViewModels
 
         /// <summary>Zakładka Wyniki (wykresy z raportów w katalogu results).</summary>
         public ResultsViewModel Results { get; }
+
+        /// <summary>Zakładka Eksport (tabele wyników scenariuszy do XLSX, CSV, XML).</summary>
+        public ExportViewModel Export { get; }
 
         public ObservableCollection<LogEntry> Log { get; } = [];
 
@@ -162,6 +166,7 @@ namespace GeoBench.Wpf.ViewModels
             Import.ImportCommand.NotifyCanExecuteChanged();
             Import.WfsImportCommand.NotifyCanExecuteChanged();
             Benchmark?.RunCommand.NotifyCanExecuteChanged();
+            Export?.NotifyBusyChanged();
         }
 
         [RelayCommand(CanExecute = nameof(IsBusy))]

@@ -67,6 +67,9 @@
                 <TabItem Header="Wyniki">
                     <views:ResultsView DataContext="{Binding Results}" />
                 </TabItem>
+                <TabItem Header="Eksport">
+                    <views:ExportView DataContext="{Binding Export}" />
+                </TabItem>
             </TabControl>
 
             <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" />

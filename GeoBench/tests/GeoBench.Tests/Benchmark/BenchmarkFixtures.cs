@@ -97,6 +97,21 @@ namespace GeoBench.Tests.Benchmark
             return Task.FromResult(extent);
         }
 
+        /// <summary>Indeks zwracany przez <see cref="SpatialIndexAsync"/> (domyślnie brak).</summary>
+        public SpatialIndexInfo? Index { get; set; }
+
+        /// <summary>Polecenia przekazane do <see cref="ExecuteDdlAsync"/>.</summary>
+        public List<string> ExecutedDdl { get; } = [];
+
+        public Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Index);
+
+        public Task ExecuteDdlAsync(string sql, CancellationToken cancellationToken = default)
+        {
+            ExecutedDdl.Add(sql);
+            return Task.CompletedTask;
+        }
+
         public Task<QueryDiagnostics> DiagnoseAsync(string sql, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
 

@@ -90,6 +90,9 @@ namespace GeoBench.Core.Benchmark
 
         public string? Error { get; set; }
 
+        /// <summary>Powód, dla którego wariant nie dotyczy scenariusza (np. W3P przy budowie STRtree); wtedy bez pomiaru.</summary>
+        public string? NotApplicable { get; set; }
+
         /// <summary>Nazwa pliku z planem zapytania w katalogu raportu.</summary>
         public string? PlanFile { get; set; }
 
@@ -111,6 +114,9 @@ namespace GeoBench.Core.Benchmark
         public required BenchmarkOptions Options { get; init; }
         public DateTime StartedAt { get; init; } = DateTime.Now;
         public DateTime? FinishedAt { get; set; }
+
+        /// <summary>Czy scenariusz daje pary wyniku; bez nich walidacja nie dotyczy (np. przebudowa indeksu).</summary>
+        public bool HasResultPairs { get; init; } = true;
 
         /// <summary>Środowisko aplikacji: system, .NET, liczba procesorów logicznych.</summary>
         public Dictionary<string, string> Environment { get; } = [];

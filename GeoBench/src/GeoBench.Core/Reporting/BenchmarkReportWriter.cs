@@ -88,10 +88,10 @@ namespace GeoBench.Core.Reporting
                 fields.AddRange(phases.Select(p => Number(v.Phases.GetValueOrDefault(p)?.MedianMs)));
                 fields.Add(v.Fingerprint?.Count.ToString(CultureInfo.InvariantCulture) ?? "");
                 fields.Add(v.Fingerprint?.Sha256 ?? "");
-                fields.Add(v.Comparison?.ToString() ?? (v.Succeeded ? "wzorzec" : ""));
+                fields.Add(v.Comparison?.ToString() ?? (!v.Succeeded ? "" : report.HasResultPairs ? "wzorzec" : "nie dotyczy"));
                 fields.Add(v.ComparedWith ?? "");
                 fields.Add(v.Saved ? "tak" : "nie");
-                fields.Add(v.Error ?? "");
+                fields.Add(v.Error ?? (v.NotApplicable is { } reason ? $"nie dotyczy: {reason}" : ""));
                 csv.AppendLine(string.Join(';', fields.Select(Escape)));
             }
             return csv.ToString();

@@ -19,6 +19,12 @@ namespace GeoBench.Core.Storage
     public readonly record struct SpatialFeature(string Id, Geometry Geometry);
 
     /// <summary>
+    /// Indeks przestrzenny kolumny warstwy odczytany z katalogu bazy: nazwa, parametry do odtworzenia
+    /// (wartości w miejsca {nazwa} szablonu przebudowy), rozmiar i liczba wierszy (SQL Server: komórki siatki).
+    /// </summary>
+    public sealed record SpatialIndexInfo(string Name, IReadOnlyDictionary<string, string> Parameters, long SizeBytes, long? Rows);
+
+    /// <summary>
     /// Wynik przebiegu diagnostycznego (poza pomiarem): plan zapytania w natywnym formacie silnika
     /// (XML showplan albo JSON z EXPLAIN) i komunikaty serwera (np. STATISTICS TIME).
     /// </summary>
@@ -56,6 +62,15 @@ namespace GeoBench.Core.Storage
 
         /// <summary>Zasięg geometrii warstwy (poza pomiarem, np. do losowania okien).</summary>
         Task<Envelope> ExtentAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
+
+        /// <summary>Indeks przestrzenny kolumny geometrii warstwy albo null, gdy go nie ma.</summary>
+        Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Polecenia DDL w jednej transakcji: przy błędzie albo przerwaniu baza wycofuje całość
+        /// (np. usunięty indeks wraca). W otwartej transakcji kontekstu (testy) wykonywane w niej.
+        /// </summary>
+        Task ExecuteDdlAsync(string sql, CancellationToken cancellationToken = default);
 
         /// <summary>Przebieg diagnostyczny zapytania: rzeczywisty plan i statystyki serwera.</summary>
         Task<QueryDiagnostics> DiagnoseAsync(string sql, CancellationToken cancellationToken = default);

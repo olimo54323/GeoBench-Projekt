@@ -29,14 +29,25 @@ namespace GeoBench.Core.Benchmark
             if (options.Repetitions < 1 || options.Warmups < 0)
                 throw new ArgumentException("Liczba pomiarów musi być dodatnia, a rozgrzewek nieujemna.", nameof(options));
 
-            var report = new BenchmarkReport { ScenarioId = scenario.Id, ScenarioName = scenario.Name, Options = options };
+            var report = new BenchmarkReport
+            {
+                ScenarioId = scenario.Id,
+                ScenarioName = scenario.Name,
+                Options = options,
+                HasResultPairs = scenario.HasResultPairs
+            };
             report.Environment["system"] = RuntimeInformation.OSDescription;
             report.Environment["dotnet"] = RuntimeInformation.FrameworkDescription;
             report.Environment["procesory_logiczne"] = System.Environment.ProcessorCount.ToString();
             report.Environment["gc_serwerowy"] = System.Runtime.GCSettings.IsServerGC ? "tak" : "nie";
 
+            var applicable = variants.Where(v => scenario.NotApplicable(v) == null).ToList();
+            if (applicable.Count == 0)
+                throw new ArgumentException("Żaden z wybranych wariantów nie dotyczy tego scenariusza.", nameof(variants));
+
             var step = 0;
-            var totalSteps = variants.Sum(v => options.Warmups + options.Repetitions + (options.Diagnostics && v.Strategy.InDatabase ? 1 : 0))
+            var totalSteps = applicable.Sum(v => options.Warmups + options.Repetitions
+                    + (options.Diagnostics && scenario.HasDiagnostics && v.Strategy.InDatabase ? 1 : 0))
                 + (options.SaveResults && scenario.HasResultTable ? variants.Count : 0) + 1;
             void Report(string message) => progress?.Report(new BenchmarkProgress(message, ++step, totalSteps));
 
@@ -46,7 +57,7 @@ namespace GeoBench.Core.Benchmark
             await CheckCountsAsync(scenario, variants, options, report, cancellationToken);
 
             // Przygotowanie wspólne dla wszystkich wariantów (np. okna), poza pomiarem
-            await using (var context = _factory.Create(variants[0].Engine))
+            await using (var context = _factory.Create(applicable[0].Engine))
                 await scenario.PrepareAsync(SpatialStore.Create(context), cancellationToken);
 
             IReadOnlyList<ResultPair>? reference = null;
@@ -60,6 +71,11 @@ namespace GeoBench.Core.Benchmark
             {
                 var result = new VariantReport(variant);
                 report.Variants.Add(result);
+                if (scenario.NotApplicable(variant) is { } reason)
+                {
+                    result.NotApplicable = reason;
+                    continue;
+                }
                 try
                 {
                     await RunVariantAsync(scenario, variant, options, report, result, Report, cancellationToken);
@@ -70,7 +86,8 @@ namespace GeoBench.Core.Benchmark
                 }
             }
 
-            Validate(report, reference);
+            if (scenario.HasResultPairs)
+                Validate(report, reference);
 
             if (options.SaveResults && scenario.HasResultTable)
             {
@@ -136,6 +153,7 @@ namespace GeoBench.Core.Benchmark
             await using var context = _factory.Create(variant.Engine);
             var store = SpatialStore.Create(context);
             result.Server = await store.GetServerInfoAsync(cancellationToken);
+            var preparationNotes = await scenario.PrepareVariantAsync(store, variant, cancellationToken);
 
             for (var i = 1; i <= options.Warmups; i++)
             {
@@ -179,7 +197,7 @@ namespace GeoBench.Core.Benchmark
             if (!result.ConsistentAcrossRuns)
                 result.Notes.Add("kolejne pomiary dały różne wyniki – wynik nie jest zapisywany");
 
-            if (options.Diagnostics && variant.Strategy.InDatabase)
+            if (options.Diagnostics && scenario.HasDiagnostics && variant.Strategy.InDatabase)
             {
                 progress($"{variant.Label}: przebieg diagnostyczny (plan zapytania)");
                 result.Diagnostics = await store.DiagnoseAsync(scenario.DiagnosticSql(variant.Engine), cancellationToken);
@@ -187,6 +205,7 @@ namespace GeoBench.Core.Benchmark
 
             var countA = report.Counts.FirstOrDefault(c => c.Engine == variant.Engine && c.Layer == scenario.LayerA.Name)?.Count ?? 0;
             result.Notes.InsertRange(0, scenario.Describe(result.Pairs, countA));
+            result.Notes.AddRange(preparationNotes);
 
             if (scenario.HandlesInvalidGeometries)
             {

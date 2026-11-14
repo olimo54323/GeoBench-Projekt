@@ -61,7 +61,7 @@ namespace GeoBench.Wpf.ViewModels
 
         /// <summary>Scenariusze gotowe do pomiaru.</summary>
         public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } =
-            [.. WindowQueryScenarios.All, new PointInPolygonScenario(), .. OverlayScenarios.All];
+            [.. IndexRebuildScenarios.All, .. WindowQueryScenarios.All, new PointInPolygonScenario(), .. OverlayScenarios.All, new NearestBuildingScenario()];
 
         /// <summary>Przy scenariuszu 3: wszystkie rozmiary okna po kolei (osobny raport na rozmiar).</summary>
         [ObservableProperty]
@@ -176,9 +176,17 @@ namespace GeoBench.Wpf.ViewModels
                 Results.Clear();
             foreach (var v in report.Variants)
             {
+                if (v.NotApplicable is { } reason)
+                {
+                    Results.Add(new BenchmarkResultRow(withScenario ? $"{report.ScenarioId} {v.Label}" : v.Label, v.Description,
+                        "", "", "", "", "", "", "nie dotyczy", reason, false));
+                    _host.AddLog($"{v.Label}: nie dotyczy ({reason})");
+                    continue;
+                }
+
                 var validation = v.Error != null
                     ? "błąd"
-                    : v.Comparison?.ToString() ?? "wzorzec";
+                    : v.Comparison?.ToString() ?? (report.HasResultPairs ? "wzorzec" : "nie dotyczy");
                 if (v.Succeeded && !v.ConsistentAcrossRuns)
                     validation += ", niestabilny";
                 var row = new BenchmarkResultRow(

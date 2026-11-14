@@ -175,6 +175,46 @@ namespace GeoBench.Core.Data.Migrations.Postgres
                     b.ToTable("budynki_dzialek_pow", (string)null);
                 });
 
+            modelBuilder.Entity("GeoBench.Core.Model.BudynekNajblizszy", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("oid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Oid"));
+
+                    b.Property<string>("IdBudynku")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("id_budynku");
+
+                    b.Property<string>("IdSasiada")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("id_sasiada");
+
+                    b.Property<double>("OdlegloscM")
+                        .HasColumnType("double precision")
+                        .HasColumnName("odleglosc_m");
+
+                    b.Property<string>("Wariant")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("wariant");
+
+                    b.HasKey("Oid")
+                        .HasName("pk_budynki_najblizsze");
+
+                    b.HasIndex("Wariant", "IdBudynku")
+                        .HasDatabaseName("ix_budynki_najblizsze_wariant_id_budynku");
+
+                    b.ToTable("budynki_najblizsze", (string)null);
+                });
+
             modelBuilder.Entity("GeoBench.Core.Model.BudynekStrefa", b =>
                 {
                     b.Property<int>("Oid")
@@ -327,6 +367,40 @@ namespace GeoBench.Core.Data.Migrations.Postgres
                         });
                 });
 
+            modelBuilder.Entity("GeoBench.Core.Model.DzialkaBudynki50m", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("oid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Oid"));
+
+                    b.Property<string>("IdDzialki")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("id_dzialki");
+
+                    b.Property<int>("LiczbaBudynkow")
+                        .HasColumnType("integer")
+                        .HasColumnName("liczba_budynkow");
+
+                    b.Property<string>("Wariant")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("wariant");
+
+                    b.HasKey("Oid")
+                        .HasName("pk_dzialki_budynki_50m");
+
+                    b.HasIndex("Wariant", "IdDzialki")
+                        .HasDatabaseName("ix_dzialki_budynki_50m_wariant_id_dzialki");
+
+                    b.ToTable("dzialki_budynki_50m", (string)null);
+                });
+
             modelBuilder.Entity("GeoBench.Core.Model.DzialkaStrefaPow", b =>
                 {
                     b.Property<int>("Oid")
@@ -365,6 +439,46 @@ namespace GeoBench.Core.Data.Migrations.Postgres
                         .HasDatabaseName("ix_dzialki_stref_pow_wariant_id_dzialki");
 
                     b.ToTable("dzialki_stref_pow", (string)null);
+                });
+
+            modelBuilder.Entity("GeoBench.Core.Model.GeometriaNaprawiona", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("oid");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Oid"));
+
+                    b.Property<string>("IdObiektu")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)")
+                        .HasColumnName("id_obiektu");
+
+                    b.Property<double>("PoleM2")
+                        .HasColumnType("double precision")
+                        .HasColumnName("pole_m2");
+
+                    b.Property<string>("Wariant")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("wariant");
+
+                    b.Property<string>("Warstwa")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("warstwa");
+
+                    b.HasKey("Oid")
+                        .HasName("pk_geometrie_naprawione");
+
+                    b.HasIndex("Wariant", "Warstwa", "IdObiektu")
+                        .HasDatabaseName("ix_geometrie_naprawione_wariant_warstwa_id_obiektu");
+
+                    b.ToTable("geometrie_naprawione", (string)null);
                 });
 
             modelBuilder.Entity("GeoBench.Core.Model.StrefaPlanistyczna", b =>

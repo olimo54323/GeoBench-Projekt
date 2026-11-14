@@ -51,6 +51,22 @@ namespace GeoBench.Core.Benchmark
         /// <summary>Czy scenariusz ma tabelę wyników (zapis par po walidacji).</summary>
         bool HasResultTable => true;
 
+        /// <summary>Czy wynik to pary do walidacji (odcisk, porównanie ze wzorcem); przebudowa indeksu par nie daje.</summary>
+        bool HasResultPairs => true;
+
+        /// <summary>Czy warianty w bazie mają przebieg diagnostyczny z planem zapytania.</summary>
+        bool HasDiagnostics => true;
+
+        /// <summary>Powód, dla którego wariant nie dotyczy scenariusza (bez pomiaru), albo null, gdy dotyczy.</summary>
+        string? NotApplicable(BenchmarkVariant variant) => null;
+
+        /// <summary>
+        /// Przygotowanie wariantu poza pomiarem, przed rozgrzewką, na magazynie wariantu
+        /// (np. odczyt definicji indeksu). Zwraca uwagi do raportu wariantu.
+        /// </summary>
+        Task<IReadOnlyList<string>> PrepareVariantAsync(ISpatialStore store, BenchmarkVariant variant, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<string>>([]);
+
         /// <summary>Nowy, pusty przebieg NTS (stan jednego pomiaru: dane, indeks).</summary>
         INtsScenarioRun CreateNtsRun();
 
@@ -79,6 +95,9 @@ namespace GeoBench.Core.Benchmark
 
         /// <summary>Faza indeksu: STRtree i geometrie przygotowane (PreparedGeometry).</summary>
         void BuildIndex();
+
+        /// <summary>Czy przebieg ma fazę obliczenia (przebudowa indeksu kończy się na fazie indeksu).</summary>
+        bool HasComputation => true;
 
         /// <summary>Faza obliczenia: pary wyniku, jednowątkowo albo przez Parallel.For.</summary>
         IReadOnlyList<ResultPair> Compute(bool parallel, CancellationToken cancellationToken);

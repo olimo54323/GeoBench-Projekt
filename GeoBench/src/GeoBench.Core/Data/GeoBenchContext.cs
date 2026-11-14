@@ -38,6 +38,15 @@ namespace GeoBench.Core.Data
         /// <summary>Wyniki scenariusza 05c (działka × budynek, pole przecięcia).</summary>
         public DbSet<BudynekDzialkaPow> BudynkiDzialekPow => Set<BudynekDzialkaPow>();
 
+        /// <summary>Wyniki scenariusza 06 (najbliższy budynek).</summary>
+        public DbSet<BudynekNajblizszy> BudynkiNajblizsze => Set<BudynekNajblizszy>();
+
+        /// <summary>Wyniki scenariusza 07 (liczba budynków do 50 m od działki).</summary>
+        public DbSet<DzialkaBudynki50m> DzialkiBudynki50m => Set<DzialkaBudynki50m>();
+
+        /// <summary>Wyniki scenariusza 08 (niepoprawne geometrie po naprawie).</summary>
+        public DbSet<GeometriaNaprawiona> GeometrieNaprawione => Set<GeometriaNaprawiona>();
+
         /// <summary>Typ kolumny geometrii dla danego typu OGC (np. MultiPolygon).</summary>
         protected abstract string GeometryColumnType(string geometryType);
 
@@ -241,6 +250,35 @@ namespace GeoBench.Core.Data
                 e.Property(x => x.IdDzialki).HasMaxLength(250);
                 e.Property(x => x.IdBudynku).HasMaxLength(200);
                 e.HasIndex(x => new { x.Wariant, x.IdDzialki });
+            });
+
+            modelBuilder.Entity<BudynekNajblizszy>(e =>
+            {
+                e.ToTable("budynki_najblizsze");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdBudynku).HasMaxLength(200);
+                e.Property(x => x.IdSasiada).HasMaxLength(200);
+                e.HasIndex(x => new { x.Wariant, x.IdBudynku });
+            });
+
+            modelBuilder.Entity<DzialkaBudynki50m>(e =>
+            {
+                e.ToTable("dzialki_budynki_50m");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.IdDzialki).HasMaxLength(250);
+                e.HasIndex(x => new { x.Wariant, x.IdDzialki });
+            });
+
+            modelBuilder.Entity<GeometriaNaprawiona>(e =>
+            {
+                e.ToTable("geometrie_naprawione");
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Wariant).HasMaxLength(16);
+                e.Property(x => x.Warstwa).HasMaxLength(32);
+                e.Property(x => x.IdObiektu).HasMaxLength(250);
+                e.HasIndex(x => new { x.Wariant, x.Warstwa, x.IdObiektu });
             });
         }
     }

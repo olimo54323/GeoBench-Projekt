@@ -110,6 +110,60 @@ namespace GeoBench.Core.Storage
             }
         }
 
+        public abstract Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
+
+        public async Task ExecuteDdlAsync(string sql, CancellationToken cancellationToken = default)
+        {
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                if (Context.Database.CurrentTransaction != null)
+                {
+                    await using var inner = CreateCommand(sql);
+                    await inner.ExecuteNonQueryAsync(cancellationToken);
+                    return;
+                }
+
+                // Zatwierdzenie należy do pomiaru (zapis do dziennika); bez zatwierdzenia dispose wycofuje zmiany
+                await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
+                await using (var command = CreateCommand(sql))
+                    await command.ExecuteNonQueryAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
+        /// <summary>Tekst do SQL jako literał w apostrofach (nazwy tabel i kolumn z <see cref="SpatialLayer"/>).</summary>
+        protected static string Literal(string value) => "'" + value.Replace("'", "''") + "'";
+
+        /// <summary>Pierwszy wiersz zapytania jako słownik kolumna → wartość tekstowa (null, gdy brak wierszy).</summary>
+        protected async Task<Dictionary<string, string>?> ReadRowAsync(string sql, CancellationToken cancellationToken)
+        {
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                await using var command = CreateCommand(sql);
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                if (!await reader.ReadAsync(cancellationToken))
+                    return null;
+                var row = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < reader.FieldCount; i++)
+                    row[reader.GetName(i)] = reader.IsDBNull(i) ? "" : reader.GetValue(i) switch
+                    {
+                        double d => d.ToString("R", CultureInfo.InvariantCulture),
+                        var v => Convert.ToString(v, CultureInfo.InvariantCulture) ?? ""
+                    };
+                return row;
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
         /// <summary>Warunek SQL „geometria w kolumnie jest niepoprawna”.</summary>
         protected abstract string InvalidCondition(string quotedColumn);
 

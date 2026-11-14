@@ -13,7 +13,7 @@ namespace GeoBench.Core.Storage
             UNION ALL SELECT 'postgis', extversion FROM pg_extension WHERE extname = 'postgis'
             UNION ALL SELECT name, setting || COALESCE(' ' || unit, '')
                 FROM pg_settings
-                WHERE name IN ('shared_buffers', 'work_mem', 'effective_cache_size', 'max_parallel_workers_per_gather',
+                WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'effective_cache_size', 'max_parallel_workers_per_gather',
                                'max_parallel_workers', 'random_page_cost', 'jit')
             UNION ALL SELECT 'indeks ' || tablename || '.' || indexname, indexdef
                 FROM pg_indexes
@@ -32,6 +32,39 @@ namespace GeoBench.Core.Storage
             $"SELECT ST_SetSRID(ST_Extent({quotedColumn})::geometry, {GeoBenchContext.Srid}) FROM {quotedTable}";
 
         protected override string InvalidCondition(string quotedColumn) => $"NOT ST_IsValid({quotedColumn})";
+
+        public override async Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
+        {
+            // Indeks GiST na kolumnie geometrii; reltuples = -1, gdy tabeli jeszcze nie analizowano
+            var row = await ReadRowAsync($"""
+                SELECT i.relname AS index, n.nspname AS schema, pg_get_indexdef(i.oid) AS definition,
+                       pg_relation_size(i.oid) AS size_bytes, i.reltuples::bigint AS row_count
+                FROM pg_index AS x
+                JOIN pg_class AS i ON i.oid = x.indexrelid
+                JOIN pg_class AS t ON t.oid = x.indrelid
+                JOIN pg_namespace AS n ON n.oid = t.relnamespace
+                JOIN pg_am AS am ON am.oid = i.relam
+                JOIN pg_attribute AS a ON a.attrelid = t.oid AND a.attnum = ANY (x.indkey)
+                WHERE n.nspname = current_schema() AND t.relname = {Literal(layer.Table)}
+                  AND a.attname = {Literal(layer.GeometryColumn)} AND am.amname = 'gist'
+                ORDER BY i.relname
+                LIMIT 1
+                """, cancellationToken);
+            if (row == null)
+                return null;
+
+            var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["index"] = row["index"],
+                ["schema"] = row["schema"],
+                ["definition"] = row["definition"],
+                ["table"] = layer.Table,
+                ["column"] = layer.GeometryColumn
+            };
+            return new SpatialIndexInfo(row["index"], parameters,
+                long.TryParse(row["size_bytes"], out var size) ? size : 0,
+                long.TryParse(row["row_count"], out var rows) && rows >= 0 ? rows : null);
+        }
 
         // Połączenie kontekstu ma plugin NetTopologySuite (UseNetTopologySuite), więc sterownik zwraca typ NTS
         protected override Geometry ReadGeometry(DbDataReader reader, int ordinal) => reader.GetFieldValue<Geometry>(ordinal);

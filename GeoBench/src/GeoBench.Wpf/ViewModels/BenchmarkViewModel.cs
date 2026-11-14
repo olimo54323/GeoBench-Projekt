@@ -61,7 +61,7 @@ namespace GeoBench.Wpf.ViewModels
 
         /// <summary>Scenariusze gotowe do pomiaru.</summary>
         public IReadOnlyList<IBenchmarkScenario> Scenarios { get; } =
-            [.. IndexRebuildScenarios.All, .. WindowQueryScenarios.All, new PointInPolygonScenario(), .. OverlayScenarios.All, new NearestBuildingScenario()];
+            [.. IndexRebuildScenarios.All, .. WindowQueryScenarios.All, new PointInPolygonScenario(), .. OverlayScenarios.All, new NearestBuildingScenario(), new BuildingsWithinDistanceScenario()];
 
         /// <summary>Przy scenariuszu 3: wszystkie rozmiary okna po kolei (osobny raport na rozmiar).</summary>
         [ObservableProperty]

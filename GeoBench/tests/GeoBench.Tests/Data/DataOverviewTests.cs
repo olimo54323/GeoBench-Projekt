@@ -14,7 +14,8 @@ namespace GeoBench.Tests.Data
                 new("b_ok", BenchmarkFixtures.Rectangle(0, 0, 5, 5)),
                 new("b_zle", GeometryValidationTests.Bowtie(10, 0))
             ],
-            [SpatialLayer.Strefy] = []
+            [SpatialLayer.Strefy] = [],
+            [SpatialLayer.Regulacje] = []
         })
         {
             Index = new SpatialIndexInfo("ix_budynek_geom", new Dictionary<string, string>(), 2 * 1024 * 1024, 10)
@@ -64,11 +65,13 @@ namespace GeoBench.Tests.Data
         }
 
         [Fact]
-        public async Task Layers_CoverThreeLayers()
+        public async Task Layers_CoverAllLayers_IncludingRegulations()
         {
             var layers = await DataOverview.LayersAsync(Store(), checkValidity: false);
 
             Assert.Equal(DataOverview.Layers, layers.Select(l => l.Layer));
+            Assert.Contains(SpatialLayer.Regulacje, DataOverview.Layers);
+            Assert.Equal(0, layers.Single(l => l.Layer == SpatialLayer.Regulacje).Count);
         }
 
         [Fact]

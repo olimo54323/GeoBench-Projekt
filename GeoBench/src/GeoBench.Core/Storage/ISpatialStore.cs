@@ -10,6 +10,7 @@ namespace GeoBench.Core.Storage
         public static readonly SpatialLayer Budynki = new("budynki", "budynek", "id_budynku", "geom");
         public static readonly SpatialLayer Dzialki = new("działki", "dzialka", "id_dzialki", "geom");
         public static readonly SpatialLayer Strefy = new("strefy planistyczne", "strefa_planistyczna", "oznaczenie", "geom");
+        public static readonly SpatialLayer Regulacje = new("regulacje (OUZ, OZS)", "regulacja", "oznaczenie", "geom");
     }
 
     /// <summary>Zestaw parametrów liczbowych jednego wywołania zapytania (nazwy bez @), z kluczem do par wyniku.</summary>

@@ -18,7 +18,7 @@ namespace GeoBench.Tests.Integration
         protected abstract DatabaseEngine Engine { get; }
 
         [Fact]
-        public async Task Import_SavesActAndZones_AndReplacesOnReimport()
+        public async Task Import_SavesActZonesAndRegulations_AndReplacesOnReimport()
         {
             var factory = new GeoBenchContextFactory(GeoBenchConfiguration.Build());
             var importer = new PlanOgolnyImporter();
@@ -29,10 +29,10 @@ namespace GeoBench.Tests.Integration
             var report = await importer.ImportFileAsync(context, FixtureFiles.PathOf("pog_plan_testowy.gml"), daneBadawcze: true);
 
             Assert.Equal(4, report.Read);
-            Assert.Equal(3, report.Saved);
+            Assert.Equal(4, report.Saved);
             Assert.Empty(report.Rejected);
-            Assert.Equal(1, report.SkippedByType["ObszarUzupelnieniaZabudowy"]);
-            Assert.Equal(3, report.GeometryValid + report.GeometryRepaired);
+            Assert.False(report.SkippedByType.ContainsKey("ObszarUzupelnieniaZabudowy"));
+            Assert.Equal(4, report.GeometryValid + report.GeometryRepaired);
 
             // Ponowny import zastępuje akt zamiast dublować strefy
             context.ChangeTracker.Clear();
@@ -41,6 +41,7 @@ namespace GeoBench.Tests.Integration
 
             var akt = await context.AktyPlanowania.AsNoTracking()
                 .Include(a => a.Strefy)
+                .Include(a => a.Regulacje)
                 .SingleAsync(a => a.PrzestrzenNazw == PrzestrzenNazw && a.LokalnyId == "1POG");
             Assert.True(akt.DaneBadawcze);
             Assert.NotNull(akt.Zasieg);
@@ -61,6 +62,21 @@ namespace GeoBench.Tests.Integration
                 .Select(s => s.Oznaczenie)
                 .ToListAsync();
             Assert.Equal("1SC", Assert.Single(trafione));
+
+            // Regulacja po ponownym imporcie jest jedna (kaskada), z rodzajem zapisanym jako tekst
+            var ouz = Assert.Single(akt.Regulacje);
+            Assert.Equal(RodzajRegulacji.ObszarUzupelnieniaZabudowy, ouz.Rodzaj);
+            Assert.Equal("58OUZ", ouz.Oznaczenie);
+            Assert.NotNull(ouz.Geom);
+            Assert.Equal(GeoBenchContext.Srid, ouz.Geom.SRID);
+
+            // Zapytanie przestrzenne z indeksem regulacji: punkt wewnątrz OUZ trafia w nią
+            var punktOuz = ouz.Geom.InteriorPoint;
+            var regulacjeWPunkcie = await context.Regulacje
+                .Where(r => r.AktPlanowaniaOid == akt.Oid && r.Geom!.Contains(punktOuz))
+                .Select(r => r.Oznaczenie)
+                .ToListAsync();
+            Assert.Equal("58OUZ", Assert.Single(regulacjeWPunkcie));
         }
     }
 

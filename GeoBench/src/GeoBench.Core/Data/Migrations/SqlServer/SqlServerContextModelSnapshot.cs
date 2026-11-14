@@ -480,6 +480,83 @@ namespace GeoBench.Core.Data.Migrations.SqlServer
                     b.ToTable("geometrie_naprawione", (string)null);
                 });
 
+            modelBuilder.Entity("GeoBench.Core.Model.Regulacja", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("oid");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Oid"));
+
+                    b.Property<int>("AktPlanowaniaOid")
+                        .HasColumnType("int")
+                        .HasColumnName("akt_planowania_oid");
+
+                    b.Property<string>("CharakterUstalenia")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("charakter_ustalenia");
+
+                    b.Property<MultiPolygon>("Geom")
+                        .HasColumnType("geometry")
+                        .HasColumnName("geom");
+
+                    b.Property<string>("LokalnyId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("lokalny_id");
+
+                    b.Property<string>("Nazwa")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("nazwa");
+
+                    b.Property<DateOnly?>("ObowiazujeOd")
+                        .HasColumnType("date")
+                        .HasColumnName("obowiazuje_od");
+
+                    b.Property<string>("Oznaczenie")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("oznaczenie");
+
+                    b.Property<DateTime?>("PoczatekWersjiObiektu")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("poczatek_wersji_obiektu");
+
+                    b.Property<string>("Rodzaj")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("rodzaj");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("symbol");
+
+                    b.HasKey("Oid")
+                        .HasName("pk_regulacja");
+
+                    b.HasIndex("AktPlanowaniaOid", "Oznaczenie")
+                        .IsUnique()
+                        .HasDatabaseName("ix_regulacja_akt_planowania_oid_oznaczenie");
+
+                    b.ToTable("regulacja", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_regulacja_geom_srid", "[geom].STSrid = 2180");
+                        });
+                });
+
             modelBuilder.Entity("GeoBench.Core.Model.StrefaPlanistyczna", b =>
                 {
                     b.Property<int>("Oid")
@@ -577,6 +654,18 @@ namespace GeoBench.Core.Data.Migrations.SqlServer
                         });
                 });
 
+            modelBuilder.Entity("GeoBench.Core.Model.Regulacja", b =>
+                {
+                    b.HasOne("GeoBench.Core.Model.AktPlanowania", "AktPlanowania")
+                        .WithMany("Regulacje")
+                        .HasForeignKey("AktPlanowaniaOid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_regulacja_akt_planowania_akt_planowania_oid");
+
+                    b.Navigation("AktPlanowania");
+                });
+
             modelBuilder.Entity("GeoBench.Core.Model.StrefaPlanistyczna", b =>
                 {
                     b.HasOne("GeoBench.Core.Model.AktPlanowania", "AktPlanowania")
@@ -591,6 +680,8 @@ namespace GeoBench.Core.Data.Migrations.SqlServer
 
             modelBuilder.Entity("GeoBench.Core.Model.AktPlanowania", b =>
                 {
+                    b.Navigation("Regulacje");
+
                     b.Navigation("Strefy");
                 });
 #pragma warning restore 612, 618

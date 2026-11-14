@@ -9,10 +9,10 @@ using NetTopologySuite.Geometries;
 namespace GeoBench.Core.Import.PlanOgolny
 {
     /// <summary>
-    /// Import pliku planu ogólnego gminy (GML, APP 2.0) do jednej bazy przez EF Core: akt planowania i jego strefy.
-    /// Regulacje (OUZ, OZS) i dokumenty formalne są na razie pomijane i liczone w raporcie.
-    /// Ponowny import tego samego aktu zastępuje poprzedni (strefy usuwa kaskada klucza obcego).
-    /// Indeks przestrzenny stref powstaje po zapisie danych, z zasięgiem aktu jako BOUNDING_BOX.
+    /// Import pliku planu ogólnego gminy (GML, APP 2.0) do jednej bazy przez EF Core: akt planowania, jego strefy
+    /// i regulacje (OUZ, OZS). Dokumenty formalne są pomijane i liczone w raporcie.
+    /// Ponowny import tego samego aktu zastępuje poprzedni (strefy i regulacje usuwa kaskada klucza obcego).
+    /// Indeksy przestrzenne stref i regulacji powstają po zapisie danych, z zasięgiem aktu jako BOUNDING_BOX.
     /// Import nie jest pomiarem: służy przygotowaniu danych do scenariuszy.
     /// </summary>
     public sealed class PlanOgolnyImporter
@@ -36,6 +36,7 @@ namespace GeoBench.Core.Import.PlanOgolny
             // Kolejność obiektów w pliku jest dowolna, więc strefy czekają na akt (2 tys. obiektów mieści się w pamięci)
             MappedFeature<AktPlanowania>? mappedAkt = null;
             var strefy = new List<(MappedFeature<StrefaPlanistyczna> Mapped, string? Plan)>();
+            var regulacje = new List<(MappedFeature<Regulacja> Mapped, string? Plan)>();
 
             foreach (var record in new GmlFeatureReader().Read(stream))
             {
@@ -54,6 +55,9 @@ namespace GeoBench.Core.Import.PlanOgolny
                             break;
                         case PlanOgolnyMapper.StrefaTypeName:
                             strefy.Add((PlanOgolnyMapper.MapStrefa(record), PlanOgolnyMapper.PlanReference(record)));
+                            break;
+                        case var typeName when PlanOgolnyMapper.IsRegulacja(typeName, out var rodzaj):
+                            regulacje.Add((PlanOgolnyMapper.MapRegulacja(record, rodzaj), PlanOgolnyMapper.PlanReference(record)));
                             break;
                         default:
                             report.Skip(record.TypeName);
@@ -75,10 +79,11 @@ namespace GeoBench.Core.Import.PlanOgolny
             var akt = mappedAkt.Entity;
             report.Accept(PlanOgolnyMapper.AktTypeName, akt.LokalnyId, mappedAkt);
             AttachStrefy(report, akt, strefy);
+            AttachRegulacje(report, akt, regulacje);
 
             progress?.Report(new ImportProgress("Zapis", report.Read));
             await SaveAsync(context, akt, cancellationToken);
-            report.Saved = 1 + akt.Strefy.Count;
+            report.Saved = 1 + akt.Strefy.Count + akt.Regulacje.Count;
 
             var extent = Extent(akt);
             if (extent.IsNull || extent.Width <= 0 || extent.Height <= 0)
@@ -89,6 +94,7 @@ namespace GeoBench.Core.Import.PlanOgolny
             {
                 progress?.Report(new ImportProgress("Indeks", report.Saved));
                 await context.CreateSpatialIndexAsync<StrefaPlanistyczna>(nameof(StrefaPlanistyczna.Geom), extent, cancellationToken);
+                await context.CreateSpatialIndexAsync<Regulacja>(nameof(Regulacja.Geom), extent, cancellationToken);
             }
 
             report.Duration = stopwatch.Elapsed;
@@ -105,7 +111,7 @@ namespace GeoBench.Core.Import.PlanOgolny
             foreach (var (mapped, plan) in strefy)
             {
                 var strefa = mapped.Entity;
-                if (plan != null && !plan.EndsWith(aktReference, StringComparison.Ordinal) && !plan.Contains(aktReference + "/", StringComparison.Ordinal))
+                if (!BelongsTo(plan, aktReference))
                 {
                     report.Reject(PlanOgolnyMapper.StrefaTypeName, strefa.LokalnyId, $"Strefa należy do innego aktu: {plan}.");
                     continue;
@@ -120,6 +126,37 @@ namespace GeoBench.Core.Import.PlanOgolny
                 akt.Strefy.Add(strefa);
             }
         }
+
+        /// <summary>Te same kontrole co dla stref; oznaczenie regulacji jest unikalne w obrębie aktu niezależnie od rodzaju.</summary>
+        private static void AttachRegulacje(ImportReport report, AktPlanowania akt,
+            List<(MappedFeature<Regulacja> Mapped, string? Plan)> regulacje)
+        {
+            var aktReference = $"/{akt.PrzestrzenNazw}/{akt.LokalnyId}";
+            var oznaczenia = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var (mapped, plan) in regulacje)
+            {
+                var regulacja = mapped.Entity;
+                var typeName = regulacja.Rodzaj.ToString();
+                if (!BelongsTo(plan, aktReference))
+                {
+                    report.Reject(typeName, regulacja.LokalnyId, $"Regulacja należy do innego aktu: {plan}.");
+                    continue;
+                }
+                if (!oznaczenia.Add(regulacja.Oznaczenie))
+                {
+                    report.Reject(typeName, regulacja.LokalnyId, $"Powtórzone oznaczenie regulacji: {regulacja.Oznaczenie}.");
+                    continue;
+                }
+
+                report.Accept(typeName, regulacja.LokalnyId, mapped);
+                akt.Regulacje.Add(regulacja);
+            }
+        }
+
+        /// <summary>Brak odnośnika plan nie wyklucza obiektu; odnośnik musi kończyć się aktem (lub jego wersją).</summary>
+        private static bool BelongsTo(string? plan, string aktReference) =>
+            plan == null || plan.EndsWith(aktReference, StringComparison.Ordinal) || plan.Contains(aktReference + "/", StringComparison.Ordinal);
 
         private static async Task SaveAsync(GeoBenchContext context, AktPlanowania akt, CancellationToken cancellationToken)
         {
@@ -140,7 +177,7 @@ namespace GeoBench.Core.Import.PlanOgolny
                 await transaction.CommitAsync(cancellationToken);
         }
 
-        /// <summary>Zasięg aktu powiększony o strefy (mogą nieznacznie wystawać poza granicę gminy).</summary>
+        /// <summary>Zasięg aktu powiększony o strefy i regulacje (mogą nieznacznie wystawać poza granicę gminy).</summary>
         private static Envelope Extent(AktPlanowania akt)
         {
             var extent = akt.Zasieg == null ? new Envelope() : new Envelope(akt.Zasieg.EnvelopeInternal);
@@ -148,6 +185,11 @@ namespace GeoBench.Core.Import.PlanOgolny
             {
                 if (strefa.Geom != null)
                     extent.ExpandToInclude(strefa.Geom.EnvelopeInternal);
+            }
+            foreach (var regulacja in akt.Regulacje)
+            {
+                if (regulacja.Geom != null)
+                    extent.ExpandToInclude(regulacja.Geom.EnvelopeInternal);
             }
             return extent;
         }

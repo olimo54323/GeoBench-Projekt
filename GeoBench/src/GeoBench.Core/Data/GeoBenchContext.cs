@@ -25,6 +25,7 @@ namespace GeoBench.Core.Data
         public DbSet<Budynek> Budynki => Set<Budynek>();
         public DbSet<AktPlanowania> AktyPlanowania => Set<AktPlanowania>();
         public DbSet<StrefaPlanistyczna> StrefyPlanistyczne => Set<StrefaPlanistyczna>();
+        public DbSet<Regulacja> Regulacje => Set<Regulacja>();
 
         /// <summary>Wyniki scenariusza 4 (budynek w strefie) dla każdego wariantu.</summary>
         public DbSet<BudynekStrefa> BudynkiStref => Set<BudynekStrefa>();
@@ -208,6 +209,22 @@ namespace GeoBench.Core.Data
                 e.Property(x => x.CharakterUstalenia).HasMaxLength(100);
                 e.Property(x => x.Geom).HasColumnType(GeometryColumnType("MultiPolygon"));
                 e.HasOne(x => x.AktPlanowania).WithMany(a => a.Strefy).HasForeignKey(x => x.AktPlanowaniaOid);
+                e.HasIndex(x => new { x.AktPlanowaniaOid, x.Oznaczenie }).IsUnique();
+            });
+
+            modelBuilder.Entity<Regulacja>(e =>
+            {
+                e.ToTable("regulacja", t => t.HasCheckConstraint("ck_regulacja_geom_srid", SridCheckSql("geom")));
+                e.HasKey(x => x.Oid);
+                e.Property(x => x.Rodzaj).HasConversion<string>().HasMaxLength(100);
+                e.Property(x => x.Oznaczenie).HasMaxLength(100);
+                e.Property(x => x.LokalnyId).HasMaxLength(255);
+                e.Property(x => x.Symbol).HasMaxLength(10);
+                e.Property(x => x.Nazwa).HasMaxLength(1000);
+                e.Property(x => x.Status).HasMaxLength(100);
+                e.Property(x => x.CharakterUstalenia).HasMaxLength(100);
+                e.Property(x => x.Geom).HasColumnType(GeometryColumnType("MultiPolygon"));
+                e.HasOne(x => x.AktPlanowania).WithMany(a => a.Regulacje).HasForeignKey(x => x.AktPlanowaniaOid);
                 e.HasIndex(x => new { x.AktPlanowaniaOid, x.Oznaczenie }).IsUnique();
             });
 

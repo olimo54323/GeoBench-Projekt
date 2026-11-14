@@ -118,6 +118,43 @@ namespace GeoBench.Tests.Import
             Assert.NotNull(mapped.GeometryReason);
         }
 
+        [Fact]
+        public void Ouz58_MapsAttributesTextNameAndGeometry()
+        {
+            var record = FixtureFiles.Read("pog_plan_testowy.gml").Single(f => f.TypeName == "ObszarUzupelnieniaZabudowy");
+            Assert.True(PlanOgolnyMapper.IsRegulacja(record.TypeName, out var rodzaj));
+
+            var mapped = PlanOgolnyMapper.MapRegulacja(record, rodzaj);
+            var regulacja = mapped.Entity;
+
+            Assert.Equal(RodzajRegulacji.ObszarUzupelnieniaZabudowy, regulacja.Rodzaj);
+            Assert.Equal("58OUZ", regulacja.Oznaczenie);
+            Assert.Equal("1POG-58OUZ", regulacja.LokalnyId);
+            Assert.Equal("OUZ", regulacja.Symbol);
+            Assert.Equal("Obszar uzupełnienia zabudowy", regulacja.Nazwa);
+            Assert.Equal("elaboration", regulacja.Status);
+            Assert.Equal("generallyBinding", regulacja.CharakterUstalenia);
+            Assert.Equal(new DateOnly(2025, 9, 3), regulacja.ObowiazujeOd);
+            Assert.Equal(new DateTime(2025, 9, 3, 12, 53, 2, DateTimeKind.Utc), regulacja.PoczatekWersjiObiektu);
+            Assert.Equal(GeometryStatus.Valid, mapped.GeometryStatus);
+            Assert.NotNull(regulacja.Geom);
+            Assert.Equal(GeoBenchContext.Srid, regulacja.Geom.SRID);
+            Assert.InRange(regulacja.Geom.EnvelopeInternal.MinX, 495000, 525000);
+            Assert.EndsWith("/AktPlanowaniaPrzestrzennego/PL.ZIPPZP.TEST/246401-POG/1POG", PlanOgolnyMapper.PlanReference(record));
+        }
+
+        [Theory]
+        [InlineData("ObszarUzupelnieniaZabudowy", true)]
+        [InlineData("ObszarZabudowySrodmiejskiej", true)]
+        [InlineData("StrefaPlanistyczna", false)]
+        [InlineData("ObszarStandardowDostepnosciInfrastrukturySpolecznej", false)]
+        [InlineData("obszarUzupelnieniaZabudowy", false)]
+        [InlineData("0", false)]
+        public void IsRegulacja_OnlyForOuzAndOzs(string typeName, bool expected)
+        {
+            Assert.Equal(expected, PlanOgolnyMapper.IsRegulacja(typeName, out _));
+        }
+
         private static FeatureRecord Strefa(string oznaczenie) =>
             FixtureFiles.Read("pog_strefy.gml").Single(f => f.TypeName == PlanOgolnyMapper.StrefaTypeName && f.GetValue("oznaczenie") == oznaczenie);
 

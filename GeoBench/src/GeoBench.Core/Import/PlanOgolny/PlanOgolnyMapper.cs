@@ -59,6 +59,31 @@ namespace GeoBench.Core.Import.PlanOgolny
             return new MappedFeature<StrefaPlanistyczna>(strefa, status, reason, arcs);
         }
 
+        /// <summary>Typ obiektu GML jest regulacją importowaną do tabeli regulacja (OUZ, OZS).</summary>
+        public static bool IsRegulacja(string typeName, out RodzajRegulacji rodzaj) =>
+            Enum.TryParse(typeName, ignoreCase: false, out rodzaj) && Enum.IsDefined(rodzaj) && !char.IsDigit(typeName[0]);
+
+        /// <summary>Regulacja bez powiązania z aktem; powiązanie ustala importer. Pole nazwa jest tu tekstem, nie kodem.</summary>
+        public static MappedFeature<Regulacja> MapRegulacja(FeatureRecord record, RodzajRegulacji rodzaj)
+        {
+            var regulacja = new Regulacja
+            {
+                Rodzaj = rodzaj,
+                Oznaczenie = Required(record, "oznaczenie"),
+                LokalnyId = Required(record, "lokalnyId"),
+                Symbol = Required(record, "symbol"),
+                Nazwa = record.GetValue("nazwa"),
+                Status = Code(record, "status"),
+                CharakterUstalenia = Code(record, "charakterUstalenia"),
+                ObowiazujeOd = Date(record, "obowiazujeOd"),
+                PoczatekWersjiObiektu = UtcDateTime(record, "poczatekWersjiObiektu")
+            };
+
+            var (geometry, status, reason, arcs) = MapGeometry(record, "geometria");
+            regulacja.Geom = geometry;
+            return new MappedFeature<Regulacja>(regulacja, status, reason, arcs);
+        }
+
         /// <summary>Odnośnik obiektu do aktu planowania (pole plan), np. …/AktPlanowaniaPrzestrzennego/PL.ZIPPZP.9398/246401-POG/1POG.</summary>
         public static string? PlanReference(FeatureRecord record) => record.Find("plan")?.Href;
 

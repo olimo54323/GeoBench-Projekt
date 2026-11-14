@@ -30,5 +30,8 @@ namespace GeoBench.Core.Model
         public MultiPolygon? Zasieg { get; set; }
 
         public List<StrefaPlanistyczna> Strefy { get; set; } = [];
+
+        /// <summary>Regulacje (OUZ, OZS) nakładane na strefy.</summary>
+        public List<Regulacja> Regulacje { get; set; } = [];
     }
 }

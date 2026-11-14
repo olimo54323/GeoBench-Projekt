@@ -27,7 +27,8 @@ namespace GeoBench.Core.Data
     /// </summary>
     public static class DataOverview
     {
-        public static IReadOnlyList<SpatialLayer> Layers { get; } = [SpatialLayer.Budynki, SpatialLayer.Dzialki, SpatialLayer.Strefy];
+        public static IReadOnlyList<SpatialLayer> Layers { get; } =
+            [SpatialLayer.Budynki, SpatialLayer.Dzialki, SpatialLayer.Strefy, SpatialLayer.Regulacje];
 
         /// <param name="checkValidity">Sprawdzenie poprawności wszystkich geometrii (wolne: to praca scenariusza 08).</param>
         public static async Task<IReadOnlyList<LayerOverview>> LayersAsync(ISpatialStore store, bool checkValidity,

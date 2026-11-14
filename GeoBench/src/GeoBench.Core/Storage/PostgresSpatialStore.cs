@@ -33,6 +33,10 @@ namespace GeoBench.Core.Storage
 
         protected override string InvalidCondition(string quotedColumn) => $"NOT ST_IsValid({quotedColumn})";
 
+        // Tabela z TOAST (duże geometrie), bez indeksów
+        protected override string TableSizeSql(SpatialLayer layer) =>
+            $"SELECT pg_table_size(to_regclass(quote_ident(current_schema()) || '.' || quote_ident({Literal(layer.Table)})))";
+
         public override async Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
         {
             // Indeks GiST na kolumnie geometrii; reltuples = -1, gdy tabeli jeszcze nie analizowano

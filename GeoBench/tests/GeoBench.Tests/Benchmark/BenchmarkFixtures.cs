@@ -103,6 +103,10 @@ namespace GeoBench.Tests.Benchmark
         /// <summary>Polecenia przekazane do <see cref="ExecuteDdlAsync"/>.</summary>
         public List<string> ExecutedDdl { get; } = [];
 
+        /// <summary>Rozmiar tabeli zwracany przez <see cref="TableSizeAsync"/>: umowne 1000 B na obiekt.</summary>
+        public Task<long> TableSizeAsync(SpatialLayer layer, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_layers[layer].Count * 1000L);
+
         public Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default) =>
             Task.FromResult(Index);
 

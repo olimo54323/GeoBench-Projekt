@@ -1,0 +1,82 @@
+<UserControl x:Class="GeoBench.Wpf.Views.DataView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:GeoBench.Wpf.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:DataViewModel}"
+             d:DesignWidth="900" d:DesignHeight="600">
+    <UserControl.Resources>
+        <!-- Wiersz z problemem (błąd, brak indeksu, niepoprawne geometrie) wyróżniony kolorem -->
+        <Style x:Key="ProblemRow" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsProblem}" Value="True">
+                    <Setter Property="Background" Value="#FFF4E5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <WrapPanel Orientation="Horizontal">
+            <Button Content="Odśwież" Command="{Binding RefreshCommand}" Margin="0,0,12,4" Padding="12,3" FontWeight="SemiBold" />
+            <CheckBox Content="Sprawdź poprawność geometrii (wolniej)" IsChecked="{Binding CheckValidity}" VerticalAlignment="Center" Margin="0,0,12,4" />
+        </WrapPanel>
+
+        <TextBlock Grid.Row="1" Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,4,0,6">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasMismatch}" Value="True">
+                            <Setter Property="Foreground" Value="#A93226" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <DockPanel Grid.Row="2">
+            <TextBlock DockPanel.Dock="Top" Text="Warstwy" Style="{StaticResource SectionHeader}" />
+            <DataGrid ItemsSource="{Binding Layers}" AutoGenerateColumns="False" IsReadOnly="True"
+                      HeadersVisibility="Column" RowStyle="{StaticResource ProblemRow}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Warstwa" Binding="{Binding Layer}" />
+                    <DataGridTextColumn Header="Baza" Binding="{Binding Database}" />
+                    <DataGridTextColumn Header="Obiektów" Binding="{Binding Count}" />
+                    <DataGridTextColumn Header="Zasięg (EPSG:2180)" Binding="{Binding Extent}" />
+                    <DataGridTextColumn Header="Niepoprawne" Binding="{Binding Invalid}" />
+                    <DataGridTextColumn Header="Tabela [MB]" Binding="{Binding TableSize}" />
+                    <DataGridTextColumn Header="Indeks przestrzenny" Binding="{Binding Index}" />
+                    <DataGridTextColumn Header="Indeks [MB]" Binding="{Binding IndexSize}" />
+                    <DataGridTextColumn Header="Komórek / wpisów" Binding="{Binding IndexRows}" />
+                    <DataGridTextColumn Header="Uwagi" Binding="{Binding Error}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+
+        <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" ResizeDirection="Rows" Margin="0,4" />
+
+        <DockPanel Grid.Row="4">
+            <TextBlock DockPanel.Dock="Top" Text="Wyniki scenariuszy w bazach" Style="{StaticResource SectionHeader}" />
+            <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Tabela" Binding="{Binding Table}" />
+                    <DataGridTextColumn Header="Scenariusz" Binding="{Binding Title}" />
+                    <DataGridTextColumn Header="Baza" Binding="{Binding Database}" />
+                    <DataGridTextColumn Header="Wariant" Binding="{Binding Variant}" />
+                    <DataGridTextColumn Header="Wierszy" Binding="{Binding Rows}" />
+                    <DataGridTextColumn Header="Uwagi" Binding="{Binding Error}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </Grid>
+</UserControl>

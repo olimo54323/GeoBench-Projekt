@@ -112,6 +112,24 @@ namespace GeoBench.Core.Storage
 
         public abstract Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 
+        /// <summary>Zapytanie zwracające rozmiar tabeli w bajtach (jedna wartość).</summary>
+        protected abstract string TableSizeSql(SpatialLayer layer);
+
+        public async Task<long> TableSizeAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
+        {
+            await Context.Database.OpenConnectionAsync(cancellationToken);
+            try
+            {
+                await using var command = CreateCommand(TableSizeSql(layer));
+                var value = await command.ExecuteScalarAsync(cancellationToken);
+                return value is null or DBNull ? 0 : Convert.ToInt64(value, CultureInfo.InvariantCulture);
+            }
+            finally
+            {
+                await Context.Database.CloseConnectionAsync();
+            }
+        }
+
         public async Task ExecuteDdlAsync(string sql, CancellationToken cancellationToken = default)
         {
             await Context.Database.OpenConnectionAsync(cancellationToken);

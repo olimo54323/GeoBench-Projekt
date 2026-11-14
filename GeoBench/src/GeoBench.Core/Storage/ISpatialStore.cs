@@ -63,6 +63,11 @@ namespace GeoBench.Core.Storage
         /// <summary>Zasięg geometrii warstwy (poza pomiarem, np. do losowania okien).</summary>
         Task<Envelope> ExtentAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Rozmiar tabeli warstwy w bajtach: dane razem z geometriami poza wierszem (LOB, TOAST), bez indeksu przestrzennego.
+        /// </summary>
+        Task<long> TableSizeAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
+
         /// <summary>Indeks przestrzenny kolumny geometrii warstwy albo null, gdy go nie ma.</summary>
         Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default);
 

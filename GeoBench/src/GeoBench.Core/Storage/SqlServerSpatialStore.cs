@@ -39,6 +39,10 @@ namespace GeoBench.Core.Storage
 
         protected override string InvalidCondition(string quotedColumn) => $"{quotedColumn}.STIsValid() = 0";
 
+        // Strony w wierszu, LOB i przepełnienia tabeli (indeks przestrzenny ma własną tabelę wewnętrzną, więc się nie liczy)
+        protected override string TableSizeSql(SpatialLayer layer) =>
+            $"SELECT SUM(used_page_count) * 8192 FROM sys.dm_db_partition_stats WHERE object_id = OBJECT_ID({Literal(layer.Table)}) AND index_id IN (0, 1)";
+
         public override async Task<SpatialIndexInfo?> SpatialIndexAsync(SpatialLayer layer, CancellationToken cancellationToken = default)
         {
             // Rozmiar i liczba wierszy (komórek siatki) z wewnętrznej tabeli indeksu przestrzennego

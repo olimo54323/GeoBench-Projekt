@@ -46,6 +46,7 @@ namespace GeoBench.Wpf.ViewModels
             _dialogs = dialogs;
             Connections = new ConnectionsViewModel(factory, this, dialogs);
             Import = new ImportViewModel(factory, this, dialogs);
+            Data = new DataViewModel(factory, this);
             MapPanel = new MapViewModel(factory, this, dialogs);
             Results = new ResultsViewModel(this, dialogs);
             Benchmark = new BenchmarkViewModel(factory, this, dialogs, () => Results.Reload());
@@ -55,6 +56,9 @@ namespace GeoBench.Wpf.ViewModels
         public ConnectionsViewModel Connections { get; }
 
         public ImportViewModel Import { get; }
+
+        /// <summary>Zakładka Dane (stan warstw i wyników w obu bazach).</summary>
+        public DataViewModel Data { get; }
 
         /// <summary>Zakładka Mapa.</summary>
         public MapViewModel MapPanel { get; }
@@ -167,6 +171,7 @@ namespace GeoBench.Wpf.ViewModels
             Import.WfsImportCommand.NotifyCanExecuteChanged();
             Benchmark?.RunCommand.NotifyCanExecuteChanged();
             Export?.NotifyBusyChanged();
+            Data?.NotifyBusyChanged();
         }
 
         [RelayCommand(CanExecute = nameof(IsBusy))]

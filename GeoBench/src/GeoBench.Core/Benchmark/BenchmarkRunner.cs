@@ -122,7 +122,7 @@ namespace GeoBench.Core.Benchmark
             {
                 await using var context = _factory.Create(engine);
                 var store = SpatialStore.Create(context);
-                foreach (var layer in new[] { scenario.LayerA, scenario.LayerB }.Distinct())
+                foreach (var layer in scenario.Layers.Distinct())
                 {
                     var count = await store.CountAsync(layer, cancellationToken);
                     if (count == 0)

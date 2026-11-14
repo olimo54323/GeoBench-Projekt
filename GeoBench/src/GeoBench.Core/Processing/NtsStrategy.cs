@@ -41,9 +41,12 @@ namespace GeoBench.Core.Processing
                 phases.Add(new PhaseTime(PreparePhase, stopwatch.Elapsed));
             }
 
-            stopwatch.Restart();
-            run.BuildIndex();
-            phases.Add(new PhaseTime(IndexPhase, stopwatch.Elapsed));
+            if (run.HasIndex)
+            {
+                stopwatch.Restart();
+                run.BuildIndex();
+                phases.Add(new PhaseTime(IndexPhase, stopwatch.Elapsed));
+            }
 
             if (!run.HasComputation)
                 return new StrategyRun([], phases);

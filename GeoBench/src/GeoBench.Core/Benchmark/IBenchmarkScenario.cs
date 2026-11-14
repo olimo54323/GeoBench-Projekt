@@ -23,6 +23,9 @@ namespace GeoBench.Core.Benchmark
         /// <summary>Warstwa B (prawa strona par), np. strefy planistyczne.</summary>
         SpatialLayer LayerB { get; }
 
+        /// <summary>Warstwy sprawdzane w kontroli wstępnej (liczności w bazach); domyślnie A i B.</summary>
+        IReadOnlyList<SpatialLayer> Layers => [LayerA, LayerB];
+
         /// <summary>Czy pary mają miarę (np. pole przecięcia), sumowaną w odcisku wyniku.</summary>
         bool HasMeasure { get; }
 
@@ -92,6 +95,9 @@ namespace GeoBench.Core.Benchmark
 
         /// <summary>Faza przygotowania danych po odczycie, mierzona osobno.</summary>
         void Prepare(CancellationToken cancellationToken);
+
+        /// <summary>Czy przebieg ma fazę indeksu (walidacja geometrii indeksu nie buduje).</summary>
+        bool HasIndex => true;
 
         /// <summary>Faza indeksu: STRtree i geometrie przygotowane (PreparedGeometry).</summary>
         void BuildIndex();

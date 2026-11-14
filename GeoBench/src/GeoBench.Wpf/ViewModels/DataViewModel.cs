@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GeoBench.Core.Data;
 using GeoBench.Core.Storage;
+using GeoBench.Wpf.Services;
 
 namespace GeoBench.Wpf.ViewModels
 {
@@ -24,11 +25,80 @@ namespace GeoBench.Wpf.ViewModels
 
         private readonly GeoBenchContextFactory _factory;
         private readonly IOperationHost _host;
+        private readonly IDialogService _dialogs;
 
-        public DataViewModel(GeoBenchContextFactory factory, IOperationHost host)
+        public DataViewModel(GeoBenchContextFactory factory, IOperationHost host, IDialogService dialogs)
         {
             _factory = factory;
             _host = host;
+            _dialogs = dialogs;
+        }
+
+        /// <summary>Czyszczenie obejmuje SQL Server.</summary>
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(ResetDataCommand))]
+        private bool _resetSqlServer = true;
+
+        /// <summary>Czyszczenie obejmuje PostgreSQL.</summary>
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(ResetDataCommand))]
+        private bool _resetPostgres = true;
+
+        private bool CanResetData() => !_host.IsBusy && (ResetSqlServer || ResetPostgres);
+
+        /// <summary>
+        /// Przywraca wybrane bazy do stanu po migracjach (puste tabele, liczniki od 1, bez indeksów przestrzennych),
+        /// po potwierdzeniu. Błąd jednej bazy nie przerywa drugiej; na końcu stan jest odczytywany od nowa.
+        /// </summary>
+        [RelayCommand(CanExecute = nameof(CanResetData))]
+        private async Task ResetDataAsync()
+        {
+            var engines = Engines.Where(e => e == DatabaseEngine.SqlServer ? ResetSqlServer : ResetPostgres).ToList();
+            var configured = engines.Where(_factory.IsConfigured).ToList();
+            if (configured.Count == 0)
+            {
+                _dialogs.ShowError("Żadna z wybranych baz nie ma connection stringa.", "Wyczyść dane");
+                return;
+            }
+
+            IReadOnlyList<string> tables;
+            await using (var context = _factory.Create(configured[0]))
+                tables = context.ModelTables();
+            var message =
+                $"Wyczyścić dane w: {string.Join(", ", configured.Select(DataOverview.EngineName))}?\n\n" +
+                $"Zostaną opróżnione wszystkie tabele ({tables.Count}): {string.Join(", ", tables)}.\n" +
+                "Indeksy przestrzenne zostaną usunięte, a liczniki kluczy wyzerowane. Historia migracji zostaje.\n\n" +
+                "Tej operacji nie można cofnąć. Dane trzeba będzie zaimportować ponownie.";
+            if (!_dialogs.Confirm(message, "Wyczyść dane"))
+                return;
+
+            var errors = new List<string>();
+            var ok = await _host.RunAsync("Dane: czyszczenie baz", async cancellationToken =>
+            {
+                foreach (var engine in configured)
+                {
+                    var name = DataOverview.EngineName(engine);
+                    _host.SetStatus($"Dane: czyszczenie {name}");
+                    try
+                    {
+                        await using var context = _factory.Create(engine);
+                        await context.ResetDataAsync(cancellationToken);
+                        _host.AddLog($"Dane: {name} wyczyszczona ({tables.Count} tabel).");
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        errors.Add($"{name} – {ex.GetBaseException().Message}");
+                    }
+                }
+            });
+            if (errors.Count > 0)
+            {
+                var text = "Nie wyczyszczono: " + string.Join("; ", errors);
+                _host.AddLog($"Dane: {text}", isError: true);
+                _dialogs.ShowError(text, "Wyczyść dane");
+            }
+            if (ok)
+                await RefreshAsync();
         }
 
         public ObservableCollection<DataLayerRow> Layers { get; } = [];
@@ -140,6 +210,10 @@ namespace GeoBench.Wpf.ViewModels
         }
 
         /// <summary>Odświeżenie dostępności polecenia po zmianie zajętości okna.</summary>
-        public void NotifyBusyChanged() => RefreshCommand.NotifyCanExecuteChanged();
+        public void NotifyBusyChanged()
+        {
+            RefreshCommand.NotifyCanExecuteChanged();
+            ResetDataCommand.NotifyCanExecuteChanged();
+        }
     }
 }

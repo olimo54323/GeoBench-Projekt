@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using GeoBench.Core.Data.Bulk;
 using GeoBench.Core.Model;
 using Microsoft.EntityFrameworkCore;
@@ -129,6 +130,53 @@ namespace GeoBench.Core.Data
         protected abstract string DropSpatialIndexSql(string table, string column);
 
         protected abstract string TruncateSql(string table);
+
+        /// <summary>
+        /// Polecenia opróżniające wszystkie tabele i zerujące liczniki kluczy. Referenced: do tabeli odwołuje się
+        /// klucz obcy (SQL Server nie pozwala jej obciąć poleceniem TRUNCATE).
+        /// </summary>
+        protected abstract string ResetTablesSql(IReadOnlyList<(string Table, bool Referenced)> tables);
+
+        /// <summary>Tabele modelu czyszczone przez <see cref="ResetDataAsync"/> (dane i wyniki scenariuszy).</summary>
+        public IReadOnlyList<string> ModelTables() =>
+            Model.GetEntityTypes().Select(e => e.GetTableName()).OfType<string>().Distinct().Order(StringComparer.Ordinal).ToList();
+
+        /// <summary>
+        /// Przywraca bazę do stanu po migracjach: usuwa indeksy przestrzenne (nie należą do modelu, powstają przy imporcie),
+        /// opróżnia wszystkie tabele modelu i zeruje liczniki kluczy. Historia migracji zostaje.
+        /// Całość w jednej transakcji (albo w transakcji wywołującego, np. testu).
+        /// </summary>
+        public async Task ResetDataAsync(CancellationToken cancellationToken = default)
+        {
+            var sql = new StringBuilder();
+            var tables = new List<(string Table, bool Referenced)>();
+            foreach (var entity in Model.GetEntityTypes())
+            {
+                if (entity.GetTableName() is not { } table)
+                    continue;
+                var storeObject = StoreObjectIdentifier.Table(table, entity.GetSchema());
+                foreach (var property in entity.GetProperties().Where(p => typeof(Geometry).IsAssignableFrom(p.ClrType)))
+                    sql.AppendLine(DropSpatialIndexSql(table, property.GetColumnName(storeObject)!));
+                tables.Add((table, entity.GetReferencingForeignKeys().Any()));
+            }
+            sql.Append(ResetTablesSql(tables));
+
+            var previousTimeout = Database.GetCommandTimeout();
+            Database.SetCommandTimeout(LongCommandTimeout);
+            await using var transaction = Database.CurrentTransaction == null
+                ? await Database.BeginTransactionAsync(cancellationToken)
+                : null;
+            try
+            {
+                await Database.ExecuteSqlRawAsync(sql.ToString(), cancellationToken);
+                if (transaction != null)
+                    await transaction.CommitAsync(cancellationToken);
+            }
+            finally
+            {
+                Database.SetCommandTimeout(previousTimeout);
+            }
+        }
 
         protected static readonly TimeSpan LongCommandTimeout = TimeSpan.FromMinutes(10);
 

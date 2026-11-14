@@ -28,7 +28,12 @@
 
         <WrapPanel Orientation="Horizontal">
             <Button Content="Odśwież" Command="{Binding RefreshCommand}" Margin="0,0,12,4" Padding="12,3" FontWeight="SemiBold" />
-            <CheckBox Content="Sprawdź poprawność geometrii (wolniej)" IsChecked="{Binding CheckValidity}" VerticalAlignment="Center" Margin="0,0,12,4" />
+            <CheckBox Content="Sprawdź poprawność geometrii (wolniej)" IsChecked="{Binding CheckValidity}" VerticalAlignment="Center" Margin="0,0,24,4" />
+            <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="0,0,12,4" />
+            <Button Content="Wyczyść dane…" Command="{Binding ResetDataCommand}" Margin="0,0,8,4" Padding="12,3"
+                    ToolTip="Opróżnia wszystkie tabele wybranych baz, usuwa indeksy przestrzenne i zeruje liczniki kluczy (stan po migracjach)" />
+            <CheckBox Content="SQL Server" IsChecked="{Binding ResetSqlServer}" VerticalAlignment="Center" Margin="0,0,8,4" />
+            <CheckBox Content="PostgreSQL" IsChecked="{Binding ResetPostgres}" VerticalAlignment="Center" Margin="0,0,0,4" />
         </WrapPanel>
 
         <TextBlock Grid.Row="1" Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,4,0,6">

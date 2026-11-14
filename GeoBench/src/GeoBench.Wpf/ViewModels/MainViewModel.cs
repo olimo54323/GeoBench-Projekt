@@ -46,7 +46,7 @@ namespace GeoBench.Wpf.ViewModels
             _dialogs = dialogs;
             Connections = new ConnectionsViewModel(factory, this, dialogs);
             Import = new ImportViewModel(factory, this, dialogs);
-            Data = new DataViewModel(factory, this);
+            Data = new DataViewModel(factory, this, dialogs);
             MapPanel = new MapViewModel(factory, this, dialogs);
             Results = new ResultsViewModel(this, dialogs);
             Benchmark = new BenchmarkViewModel(factory, this, dialogs, () => Results.Reload());

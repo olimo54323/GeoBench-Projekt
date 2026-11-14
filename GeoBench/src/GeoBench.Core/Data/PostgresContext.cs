@@ -39,6 +39,12 @@ namespace GeoBench.Core.Data
 
         protected override string TruncateSql(string table) => $"""TRUNCATE TABLE "{table}" RESTART IDENTITY;""";
 
+        // Jedno polecenie dla wszystkich tabel: klucze obce między nimi nie przeszkadzają
+        protected override string ResetTablesSql(IReadOnlyList<(string Table, bool Referenced)> tables) =>
+            tables.Count == 0
+                ? ""
+                : $"TRUNCATE TABLE {string.Join(", ", tables.Select(t => $"\"{t.Table}\""))} RESTART IDENTITY CASCADE;";
+
         public override Task BulkInsertAsync<TEntity>(BulkTable<TEntity> table, IReadOnlyCollection<TEntity> rows,
             CancellationToken cancellationToken = default) =>
             PostgresBulkWriter.WriteAsync(this, table, rows, cancellationToken);

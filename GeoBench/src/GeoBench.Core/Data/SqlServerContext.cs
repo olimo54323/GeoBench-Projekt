@@ -49,6 +49,24 @@ namespace GeoBench.Core.Data
         // TRUNCATE zeruje też licznik IDENTITY
         protected override string TruncateSql(string table) => $"TRUNCATE TABLE [{table}];";
 
+        // Najpierw tabele bez odwołań (obcięcie), potem tabele nadrzędne: DELETE i powrót licznika IDENTITY.
+        // RESEED 0 tylko po użyciu licznika (last_value), bo w nieużywanej tabeli dałby pierwszy klucz 0.
+        protected override string ResetTablesSql(IReadOnlyList<(string Table, bool Referenced)> tables)
+        {
+            var sql = new System.Text.StringBuilder();
+            foreach (var (table, _) in tables.Where(t => !t.Referenced))
+                sql.AppendLine(TruncateSql(table));
+            foreach (var (table, _) in tables.Where(t => t.Referenced))
+            {
+                sql.AppendLine($"DELETE FROM [{table}];");
+                sql.AppendLine($"""
+                    IF EXISTS (SELECT 1 FROM sys.identity_columns WHERE object_id = OBJECT_ID(N'{table}') AND last_value IS NOT NULL)
+                        DBCC CHECKIDENT (N'{table}', RESEED, 0) WITH NO_INFOMSGS;
+                    """);
+            }
+            return sql.ToString();
+        }
+
         public override Task BulkInsertAsync<TEntity>(BulkTable<TEntity> table, IReadOnlyCollection<TEntity> rows,
             CancellationToken cancellationToken = default) =>
             SqlServerBulkWriter.WriteAsync(this, table, rows, cancellationToken);

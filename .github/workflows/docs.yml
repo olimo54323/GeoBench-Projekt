@@ -1,0 +1,63 @@
+# Strona dokumentacji (markdown z docs/ + referencja API GeoBench.Core z komentarzy XML) budowana przez DocFX
+# i publikowana na GitHub Pages. Wymaga jednorazowo: Settings → Pages → Source: GitHub Actions.
+name: Dokumentacja
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'GeoBench/src/GeoBench.Core/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: DocFX
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # .NET 10 dla biblioteki, .NET 8 dla narzędzia DocFX
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      # Publikacja kopiuje do jednego katalogu bibliotekę, jej plik XML i zależności, z których DocFX czyta typy
+      - name: Biblioteka GeoBench.Core
+        run: dotnet publish GeoBench/src/GeoBench.Core/GeoBench.Core.csproj -c Release -o GeoBench/src/GeoBench.Core/bin/docfx
+
+      - name: Instalacja DocFX
+        run: dotnet tool update -g docfx
+
+      - name: Budowa strony
+        run: docfx docs/docfx.json
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_site
+
+  deploy:
+    name: GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

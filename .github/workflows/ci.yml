@@ -1,0 +1,55 @@
+# Budowanie i testy jednostkowe przy każdym pushu i pull requeście do main.
+# Windows, bo aplikacja WPF buduje się tylko tam; testy integracyjne (bazy danych) są pomijane.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build i testy jednostkowe
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: GeoBench
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Przywrócenie pakietów
+        run: dotnet restore GeoBench.slnx
+
+      - name: Build (Release)
+        run: dotnet build GeoBench.slnx -c Release --no-restore
+
+      - name: Testy jednostkowe
+        run: >
+          dotnet test GeoBench.slnx -c Release --no-build
+          --filter "Category!=Integration"
+          --logger "trx;LogFileName=testy.trx"
+          --results-directory TestResults
+
+      - name: Wyniki testów
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wyniki-testow
+          path: GeoBench/TestResults
+          if-no-files-found: ignore

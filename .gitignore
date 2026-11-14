@@ -433,3 +433,7 @@ FodyWeavers.xsd
 /GeoBench/cache/
 /GeoBench/results/
 appsettings.json
+# Dokumentacja DocFX (generowana w CI)
+/docs/_site/
+/docs/reference/*.yml
+/docs/reference/.manifest

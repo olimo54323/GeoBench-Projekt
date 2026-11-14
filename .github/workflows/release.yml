@@ -1,0 +1,73 @@
+# Wydanie wersji po wypchnięciu tagu v* (np. v1.0.0): testy, paczka ZIP aplikacji WPF (win-x64, wymaga .NET 10),
+# GitHub Release z automatycznymi notatkami i powiadomienie e-mail przez SMTP.
+# E-mail jest wysyłany tylko wtedy, gdy ustawiono sekrety MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_TO
+# (Settings → Secrets and variables → Actions); bez nich wydanie przechodzi bez powiadomienia.
+name: Wydanie
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Paczka i GitHub Release
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      PACKAGE: GeoBench-${{ github.ref_name }}-win-x64.zip
+      MAIL_CONFIGURED: ${{ secrets.MAIL_SERVER != '' && secrets.MAIL_TO != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Testy jednostkowe
+        working-directory: GeoBench
+        run: dotnet test GeoBench.slnx -c Release --filter "Category!=Integration"
+
+      - name: Publikacja aplikacji
+        working-directory: GeoBench
+        run: dotnet publish src/GeoBench.Wpf/GeoBench.Wpf.csproj -c Release -r win-x64 --self-contained false -o ../publish/GeoBench
+
+      # appsettings.json z hasłami nie jest w repozytorium: paczka zawiera wzór do skopiowania
+      - name: Paczka ZIP
+        shell: pwsh
+        run: |
+          Copy-Item GeoBench/appsettings.example.json, GeoBench/sources.json, README.md, LICENSE publish/GeoBench/
+          Compress-Archive -Path publish/GeoBench/* -DestinationPath $env:PACKAGE
+
+      - name: GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.PACKAGE }}
+          generate_release_notes: true
+
+      - name: Powiadomienie e-mail
+        if: env.MAIL_CONFIGURED == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT || '465' }}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: GeoBench CI <${{ secrets.MAIL_USERNAME }}>
+          to: ${{ secrets.MAIL_TO }}
+          subject: "GeoBench ${{ github.ref_name }} – nowa wersja"
+          convert_markdown: true
+          body: |
+            Utworzono nową wersję **GeoBench ${{ github.ref_name }}**.
+
+            - Wydanie: ${{ steps.release.outputs.url }}
+            - Paczka: ${{ env.PACKAGE }}
+            - Commit: ${{ github.sha }}
+            - Autor: ${{ github.actor }}
+
+            Wiadomość wysłana automatycznie przez GitHub Actions (${{ github.repository }}).

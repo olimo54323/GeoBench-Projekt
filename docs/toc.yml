@@ -1,0 +1,14 @@
+- name: Start
+  href: index.md
+- name: Instrukcja programisty
+  href: developer.md
+- name: Instrukcja użytkownika
+  href: user-guide.md
+- name: Opis API
+  href: api.md
+- name: Referencja API
+  href: reference/
+- name: Biblioteki
+  href: open-source.md
+- name: CI/CD
+  href: ci.md

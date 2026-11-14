@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "../GeoBench/src/GeoBench.Core/bin/docfx",
+          "files": [ "GeoBench.Core.dll" ]
+        }
+      ],
+      "dest": "reference",
+      "namespaceLayout": "flattened",
+      "memberLayout": "samePage"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [ "*.md", "toc.yml", "reference/**.yml", "reference/**.md" ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [ "images/**" ]
+      }
+    ],
+    "output": "_site",
+    "template": [ "default", "modern" ],
+    "globalMetadata": {
+      "_appName": "GeoBench",
+      "_appTitle": "GeoBench",
+      "_appFooter": "GeoBench – porównanie przetwarzania przestrzennego",
+      "_enableSearch": true
+    }
+  }
+}
